@@ -1,23 +1,48 @@
 let currentMessageElement = null;
+let currentReader = null; // To hold the current reader
+let currentController = null; // For aborting the fetch request
+const stopButton = document.getElementById("stopButton"); // Stop button element
+const sendButton = document.getElementById("sendButton"); // Send button element
+const inputBox = document.getElementById('input-box'); // Input box element
 
+// Event listener for the textarea to handle 'Enter' and 'Ctrl + Enter'
+document.getElementById("input-box").addEventListener("keydown", function(event) {
+    if (event.key === "Enter" && event.ctrlKey) {
+        event.preventDefault();  // Prevent the default action (inserting a new line)
+        sendMessage();
+    } else if (event.key === "Enter" && !event.ctrlKey) {
+        // Allow new line insertion for just 'Enter'
+        // No need to call preventDefault here, as we want the default behavior
+    }
+});
+
+// Send Message
 async function sendMessage() {
-    const inputBox = document.getElementById('input-box');
+    // Abort any ongoing request
+    abortCurrentRequest();
+
     const message = inputBox.value;
     inputBox.value = '';
 
     if (message) {
-        createMessageElement('You', message); // Display the user's message
-        currentMessageElement = createMessageElement('LLM', ''); // Prepare LLM's message element
+        createMessageElement('You', message);
+        currentMessageElement = createMessageElement('LLM', '');
+
+        currentController = new AbortController();
+        const signal = currentController.signal;
 
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ prompt: message })
+            body: JSON.stringify({ prompt: message }),
+            signal
         });
 
         if (response.body) {
-            const reader = response.body.getReader();
-            readStream(reader);
+            currentReader = response.body.getReader();
+            readStream(currentReader);
+            stopButton.disabled = false; // Enable the stop button when streaming starts
+            sendButton.disabled = true; // Disable the send button during streaming
         }
     }
 }
@@ -25,23 +50,38 @@ async function sendMessage() {
 function readStream(reader) {
     reader.read().then(({ done, value }) => {
         if (done) {
-            currentMessageElement = null; // Reset for the next message
+            resetCurrentRequest();
             console.log('Stream complete');
             return;
         }
 
-        // Update LLM's message element with the new chunk
         const chunk = new TextDecoder().decode(value);
         appendToMessageElement(currentMessageElement, chunk);
-
-        // Read the next chunk
         readStream(reader);
     }).catch(error => {
-        console.error('Error reading stream:', error);
-        if (currentMessageElement) {
-            currentMessageElement.textContent = 'Error receiving response';
+        if (error.name === 'AbortError') {
+            console.log('Stream reading aborted');
+        } else {
+            console.error('Error reading stream:', error);
         }
+        resetCurrentRequest();
     });
+}
+
+function abortCurrentRequest() {
+    if (currentController) {
+        currentController.abort();
+        console.log('Request aborted');
+    }
+}
+
+function resetCurrentRequest() {
+    currentReader = null;
+    currentController = null;
+    currentMessageElement = null;
+    stopButton.disabled = true; // Disable the stop button when streaming is stopped
+    sendButton.disabled = false; // Re-enable the send button when streaming is stopped
+    inputBox.focus(); // Set focus back to the input box
 }
 
 function createMessageElement(sender, initialMessage) {
@@ -65,4 +105,6 @@ function scrollToBottom() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-document.getElementById("sendButton").addEventListener("click", sendMessage);
+sendButton.addEventListener("click", sendMessage);
+stopButton.addEventListener("click", abortCurrentRequest); // Stop button listener
+stopButton.disabled = true; // Initially disable the stop button

@@ -8,8 +8,15 @@
 <body>
     <div id="chat-container">
         <div id="messages"></div>
-        <input type="text" id="input-box" placeholder="Type your message" value="what color is the sky?">
-        <button id="sendButton">Send</button>
+        <div id="chatForm">
+            <div>
+                <textarea id="input-box" placeholder="Type your message">What color is the sky?</textarea>
+            </div>
+            <div class="buttons">
+                <button class="button-gradient" id="sendButton">Send</button>
+                <button class="button-gradient" id="stopButton">Stop</button>
+            </div>
+        </div>
     </div>
     <script src="chat.js"></script>
 </body>
