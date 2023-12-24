@@ -18,7 +18,7 @@ message queue workflow and simple UI for multi-user LLM chat
     > docker run -p 6379:6379 --name my-redis -d redis
     > ```
 
-- [[llama.cpp]] with running model of choice
+- Install/Build [llama.cpp](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) with running model of choice
     > server with continuous batching and parallel requests
     > ```
     > .\server.exe -m .\models\7b\mistral-7b-instruct-v0.2.Q4_K_M.gguf -c 2048 -cb -np 2
