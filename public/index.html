@@ -2,11 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chat with LLM POC</title>
+    <title>LLM API Queue POC</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico?v=1">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="diagonal-stripes">
+    <div class="title">
+        <a href="https://github.com/jparkerweb/llm-api-queue" target="_blank">API Queue POC</a>
+    </div>
     <div id="chat-container">
         <div id="messages"></div>
         <div id="chatForm">
@@ -27,6 +30,11 @@
             </div>
             <footer id="countdownFooter"></footer>
         </div>
+    </div>
+    <div class="links">
+        <a href="http://localhost:3000/" target="_blank">💬 New LLM API Queue Chat Window</a>
+        <span>|</span>
+        <a href="http://localhost:3000/admin/queues" target="_blank">🔬 Redis Queue Dashboard</a>
     </div>
     <script src="chat.js"></script>
 </body>

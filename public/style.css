@@ -1,11 +1,40 @@
 body {
     font-family: Arial, sans-serif;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     height: 100vh;
     background-color: #f5f5f5;
     overflow: hidden;
+}
+
+.title {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+a {
+    color: rgb(152, 184, 243);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.links {
+    font-size: 0.7em;
+    margin-top: 10px;
+}
+
+.links > a {
+    color: rgba(255, 255, 255, 0.666);
+    text-transform: uppercase;
+}
+.links > span {
+    margin: 0 5px;
+    color: rgba(255, 255, 255, 0.666)
 }
 
 .diagonal-stripes {
