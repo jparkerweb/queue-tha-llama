@@ -2,6 +2,7 @@ let currentMessageElement = null;
 let currentReader = null; // To hold the current reader
 let currentController = null; // For aborting the fetch request
 let randomQuestions = []; // To hold the random questions
+let currentRequestId = null; // To hold the current request ID
 
 const stopButton = document.getElementById("stopButton"); // Stop button element
 const sendButton = document.getElementById("sendButton"); // Send button element
@@ -46,8 +47,17 @@ function setRandomQuestion() {
     }
 }
 
+// Generate a unique ID to identify the request
+function generateUniqueId() {
+    return Math.random().toString(36).substr(2, 9);
+}
+
 // Send a message to the server
 async function sendMessage() {
+    const requestId = generateUniqueId();
+    currentRequestId = requestId; // Store the request ID
+    // console.info('Request ID:', requestId);
+
     if (inputBox.value.trim() === '') {
         setRandomQuestion();
     }
@@ -69,14 +79,14 @@ async function sendMessage() {
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ prompt: message }),
+            body: JSON.stringify({ prompt: message, requestId }),
             signal
         });
 
         if (response.body) {
             currentReader = response.body.getReader();
             currentMessageElement = createMessageElement('🤖', ''); // Prepare 🤖's message element
-            readStream(currentReader);
+            readStream(currentReader, requestId);
         }
     } catch (error) {
         console.error('Error during fetch:', error);
@@ -85,8 +95,14 @@ async function sendMessage() {
 }
 
 // Read the stream and append the chunks to the message element
-function readStream(reader) {
+function readStream(reader, requestId) {
     reader.read().then(({ done, value }) => {
+        // console.info(`currentRequestId: ${currentRequestId}, requestId: ${requestId}`);
+        if (requestId !== currentRequestId) {
+            console.error('Mismatched response');
+            return;
+        }
+
         if (done) {
             resetUIState();
             return;
@@ -99,7 +115,7 @@ function readStream(reader) {
 
         const chunk = new TextDecoder().decode(value);
         appendToMessageElement(currentMessageElement, chunk);
-        readStream(reader);
+        readStream(reader, requestId); // Pass requestId in recursive call
     }).catch(error => {
         console.error('Error reading stream:', error);
         resetUIState();
@@ -110,7 +126,7 @@ function readStream(reader) {
 function abortCurrentRequest() {
     if (currentController) {
         currentController.abort();
-        console.log('Request aborted');
+        console.warn('Request aborted');
     }
     
     autoSendSwitch.checked = false; // Turn off the auto send switch
