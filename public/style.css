@@ -67,7 +67,7 @@ a:hover {
     height: 300px;
     overflow-y: auto;
     margin-bottom: 10px;
-    background-image: url('bg.png'); /* Background image */
+    background-image: url('background.png'); /* Background image */
     background-position: center; /* Center the background image */
     background-repeat: no-repeat; /* Do not repeat the image */
     background-size: auto; /* Cover the entire container */
