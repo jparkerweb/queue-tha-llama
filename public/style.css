@@ -106,7 +106,8 @@ div#messages > div {
 }
 
 .buttons > * {
-    margin: 0 5px;
+    margin: 0 3px;
+    font-size: 0.9em !important;
 }
 
 .button-flat {
@@ -229,6 +230,6 @@ div#messages > div {
   }
   
   .switch-container > span {
-    font-size: 14px;
+    font-size: 12px;
     text-transform: uppercase;
   }
