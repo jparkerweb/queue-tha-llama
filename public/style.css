@@ -12,6 +12,12 @@ body {
 .title {
     font-size: 2em;
     margin-bottom: 10px;
+    font-weight: bold; /* Optional: makes the text bold */
+    color: transparent; /* Makes the text color transparent */
+    background-image: linear-gradient(to right, #007bff, #9adbfb); /* Blue gradient */
+    background-clip: text; /* Clips the background to the text */
+    -webkit-background-clip: text; /* For WebKit browsers */
+    -webkit-text-fill-color: transparent; /* For WebKit browsers */
 }
 
 a {
@@ -50,7 +56,7 @@ a:hover {
 #chat-container {
     width: 90vw;
     max-width: 800px;
-    border: 1px solid #ddd;
+    border: 4px solid #47a7fd;
     border-radius: 15px;
     padding: 10px;
     background-color: #dee3eb;
@@ -61,21 +67,11 @@ a:hover {
     height: 300px;
     overflow-y: auto;
     margin-bottom: 10px;
-}
-
-#messages::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background-image: url('background.png'); /* Path to your image file */
-    background-position: center; /* Center the image */
-    background-repeat: no-repeat; /* Prevent repeating the image */
-    background-size: cover; /* Resize the background image to cover the entire container */
-    opacity: 0.05; /* Adjust the opacity */
-    z-index: 1; /* Place the pseudo-element behind the content */
+    background-image: url('bg.png'); /* Background image */
+    background-position: center; /* Center the background image */
+    background-repeat: no-repeat; /* Do not repeat the image */
+    background-size: auto; /* Cover the entire container */
+    background-attachment: fixed; /* Fix background relative to the viewport */
 }
 
 #messages > * {
