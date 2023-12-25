@@ -2,20 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chat with LLM</title>
+    <title>Chat with LLM POC</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=1">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="diagonal-stripes">
     <div id="chat-container">
         <div id="messages"></div>
         <div id="chatForm">
             <div>
-                <textarea id="input-box" placeholder="Type your message">What color is the sky?</textarea>
+                <textarea id="input-box" placeholder="Type your message"></textarea>
             </div>
             <div class="buttons">
-                <button class="button-gradient" id="sendButton">Send</button>
-                <button class="button-gradient" id="stopButton">Stop</button>
+                <button class="button-gradient button-gradient--green" id="sendButton">Send</button>
+                <button class="button-gradient button-gradient--orange" id="stopButton">Stop</button>
+                <button class="button-gradient button-gradient--blue" id="randomQuestionButton">Randomize</button>
+                <div class="switch-container">
+                    <label class="switch">
+                        <input type="checkbox" id="autoSendSwitch">
+                        <span class="slider round"></span>
+                    </label>
+                    <span>⚡ Auto Send</span>
+                </div>
             </div>
+            <footer id="countdownFooter"></footer>
         </div>
     </div>
     <script src="chat.js"></script>
