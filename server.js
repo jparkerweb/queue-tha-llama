@@ -9,11 +9,11 @@ const { llama } = require('./completion.js');
 const app = express();
 const server = http.createServer(app);
 const PORT = 3000;
-const MAX_CONCURRENT_REQUESTS = 2; // Reintroducing this constant
+const MAX_CONCURRENT_REQUESTS = 2;
 const REDIS_URL = "redis://127.0.0.1:6379";
 
 // Create a Bull queue
-const llamaQueue = new Queue('llama-requests', `${REDIS_URL}`);
+const llamaQueue = new Queue('llama-requests', REDIS_URL);
 
 // Set up Bull Board
 const { router } = createBullBoard([new BullAdapter(llamaQueue)]);
@@ -23,46 +23,30 @@ app.use('/admin/queues', router);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store response streams by job ID
+// Store response streams by requestId
 const responseStreams = new Map();
 
-// Process queue with limited concurrent jobs and retry logic
+// Process queue with limited concurrent jobs
 llamaQueue.process(MAX_CONCURRENT_REQUESTS, async (job) => {
-    const res = responseStreams.get(job.id);
+    const { requestId } = job.data;
+    const res = responseStreams.get(requestId);
     if (!res) return; // If response stream is not found, skip processing
 
     try {
         await streamLlamaData(job.data.prompt, res);
-        responseStreams.delete(job.id); // Clean up after streaming
+        responseStreams.delete(requestId); // Clean up after streaming
     } catch (error) {
         console.error('Error streaming data:', error);
-        if (error.message.includes('slot unavailable')) {
-            // Retry logic for 'slot unavailable' error
-            await handleSlotUnavailableError(job);
-        }
+        res.end('Error streaming data');
     }
 });
-
-async function handleSlotUnavailableError(job) {
-    try {
-        // Optional: implement a delay before retrying
-        await delay(500);
-
-        // Add the job back to the queue for retrying
-        await llamaQueue.add(job.data, { jobId: job.id });
-    } catch (retryError) {
-        console.error('Error retrying job:', retryError);
-    }
-}
 
 // Stream LLaMA data to response
 async function streamLlamaData(prompt, res) {
     try {
-        console.log(`starting response to: ${prompt}`);
         for await (const chunk of llama(prompt)) {
             res.write(`${chunk.data.content}`);
         }
-        console.log(`ended response to: ${prompt}`);
     } catch (error) {
         console.error('Error streaming data:', error);
     } finally {
@@ -72,11 +56,11 @@ async function streamLlamaData(prompt, res) {
 
 // Endpoint to handle chat messages
 app.post('/chat', async (req, res) => {
-    const { prompt } = req.body;
-    const job = await llamaQueue.add({ prompt });
+    const { prompt, requestId } = req.body;
+    const job = await llamaQueue.add({ prompt, requestId });
 
     // Store the response stream to be used when the job is processed
-    responseStreams.set(job.id, res);
+    responseStreams.set(requestId, res);
     res.writeHead(200, { 'Content-Type': 'text/plain' });
 });
 
