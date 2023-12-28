@@ -97,14 +97,21 @@ a:hover {
     background-color: #555; /* Darker color on hover */
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(-360deg); }
+.emoji-tilt {
+    display: inline-block;
+    animation: tilt 2.75s ease-in-out infinite;
 }
 
-.emoji-spin {
-    display: inline-block;
-    animation: spin 3s linear infinite;
+@keyframes tilt {
+    0%, 100% {
+        transform: rotate(0);
+    }
+    25% {
+        transform: rotate(25deg); /* tilt in one direction */
+    }
+    75% {
+        transform: rotate(-25deg); /* tilt in the opposite direction */
+    }
 }
 
 div#messages > div {
@@ -133,24 +140,6 @@ div#messages > div {
 .buttons > * {
     margin: 0 3px;
     font-size: 0.9em !important;
-}
-
-.button-flat {
-    background-color: #4CAF50; /* Green */
-    border: none;
-    color: white;
-    padding: 7px 14px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.button-flat:hover {
-    background-color: #45a049;
 }
 
 .button-gradient {
@@ -191,6 +180,10 @@ div#messages > div {
 
 .button-gradient:hover:not(:disabled) {
     transform: scale(1.05);
+}
+
+button#randomQuestionButton {
+    margin-left: 30px;
 }
 
 /* Style for the switch (toggle) */
@@ -250,7 +243,6 @@ div#messages > div {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-left: 20px;
     font-size: 16px;
   }
   

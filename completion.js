@@ -97,8 +97,14 @@ async function* llama(prompt, params = {}, config = {}) {
           }
           if (result.error) {
             result.error = JSON.parse(result.error);
-            console.error(`llama.cpp error: ${result.error.content}`);
+            if (result.error.content.includes('slot unavailable')) {
+              // Throw an error to be caught by the server-side logic
+              throw new Error('slot unavailable');
+            } else {
+              console.error(`llama.cpp error: ${result.error.content}`);
+            }
           }
+
         }
       }
     }

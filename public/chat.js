@@ -9,6 +9,17 @@ const sendButton = document.getElementById("sendButton"); // Send button element
 const randomQuestionButton = document.getElementById("randomQuestionButton"); // Random question button element
 const autoSendSwitch = document.getElementById("autoSendSwitch"); // Auto send switch element
 const inputBox = document.getElementById("input-box"); // Input box element
+const questionsFile = "/questions/facts.txt"; // Questions file
+
+// Set the links to the chat and admin dashboard pages
+document.addEventListener('DOMContentLoaded', () => {
+    const currentUrl = window.location.href;
+    const chatLink = document.getElementById('chatLink');
+    const dashboardLink = document.getElementById('dashboardLink');
+
+    chatLink.href = currentUrl; // Set href to the current URL
+    dashboardLink.href = new URL('/admin/queues', currentUrl); // Append '/admin/queues' to the current URL
+});
 
 // Event listener for the auto send switch
 autoSendSwitch.addEventListener("change", function() {
@@ -30,7 +41,7 @@ inputBox.addEventListener("keydown", function(event) {
 // Load the random questions from the file
 async function loadRandomQuestions() {
     try {
-        const response = await fetch('random-questions.txt');
+        const response = await fetch(questionsFile);
         const text = await response.text();
         randomQuestions = text.split('\n').filter(question => question.trim() !== '');
         setRandomQuestion();
@@ -43,7 +54,7 @@ async function loadRandomQuestions() {
 function setRandomQuestion() {
     if (randomQuestions.length > 0) {
         const randomIndex = Math.floor(Math.random() * randomQuestions.length);
-        inputBox.value = randomQuestions[randomIndex];
+        inputBox.value = randomQuestions[randomIndex].trim(); // Trim the question to remove any trailing newline
     }
 }
 
@@ -53,21 +64,22 @@ function generateUniqueId() {
 }
 
 // Send a message to the server
-async function sendMessage() {
+async function sendMessage(showQuestion = true) {
     const requestId = generateUniqueId();
     currentRequestId = requestId; // Store the request ID
-    // console.info('Request ID:', requestId);
 
     if (inputBox.value.trim() === '') {
         setRandomQuestion();
     }
 
-    const message = inputBox.value;
+    const message = inputBox.value.trim();
     if (!message) return;
 
-    createMessageElement('💬', message); // Create and display user's message
+    if (showQuestion) {
+        createMessageElement('💬', message); // Create and display user's message
+    }
 
-    inputBox.value = '';
+    inputBox.value = ''; // Clear the input box
     stopButton.disabled = false;
     sendButton.disabled = true;
     randomQuestionButton.disabled = true;
@@ -85,8 +97,7 @@ async function sendMessage() {
 
         if (response.body) {
             currentReader = response.body.getReader();
-            currentMessageElement = createMessageElement('🤖', ''); // Prepare 🤖's message element
-            readStream(currentReader, requestId);
+            readStream(currentReader, requestId, message); // Pass the prompt to readStream
         }
     } catch (error) {
         console.error('Error during fetch:', error);
@@ -95,31 +106,48 @@ async function sendMessage() {
 }
 
 // Read the stream and append the chunks to the message element
-function readStream(reader, requestId) {
-    reader.read().then(({ done, value }) => {
-        // console.info(`currentRequestId: ${currentRequestId}, requestId: ${requestId}`);
-        if (requestId !== currentRequestId) {
-            console.error('Mismatched response');
-            return;
-        }
+async function readStream(reader, requestId, prompt) {
+    let accumulatedResponse = ''; // Variable to accumulate the response
+    let startedResponse = false; // Flag to check if the response has started
 
-        if (done) {
+    while (true) {
+        try {
+            const { done, value } = await reader.read();
+            if (requestId !== currentRequestId) {
+                console.error('Mismatched response');
+                break;
+            }
+
+            if (done) {
+                if (!accumulatedResponse.trim()) {
+                    // Resend the same prompt if the response is empty and auto send is off
+                    console.log('Empty response, resending prompt:', prompt);
+                    inputBox.value = prompt; // Set the prompt back to the input box
+                    sendMessage(showQuestion = false); // Resend the message
+                } else {
+                    resetUIState();
+                }
+                break;
+            } else if (!startedResponse) {
+                currentMessageElement = createMessageElement('🤖', ''); // Prepare 🤖's message element
+                startedResponse = true;
+            }
+
+            // Process the chunk
+            const chunk = new TextDecoder().decode(value);
+            accumulatedResponse += chunk; // Accumulate the response
+            appendToMessageElement(currentMessageElement, chunk);
+
+            // Stop the animation
+            document.querySelectorAll('.emoji-tilt').forEach(element => {
+                element.classList.remove('emoji-tilt');
+            });
+        } catch (error) {
+            console.error('Error reading stream:', error);
             resetUIState();
-            return;
+            break;
         }
-
-        // Stop the spinning animation
-        document.querySelectorAll('.emoji-spin').forEach(element => {
-            element.classList.remove('emoji-spin');
-        });
-
-        const chunk = new TextDecoder().decode(value);
-        appendToMessageElement(currentMessageElement, chunk);
-        readStream(reader, requestId); // Pass requestId in recursive call
-    }).catch(error => {
-        console.error('Error reading stream:', error);
-        resetUIState();
-    });
+    }
 }
 
 // Abort the current request and turn off the auto send switch
@@ -163,7 +191,7 @@ function createMessageElement(sender, initialMessage) {
     if (sender === '💬') {
         const emojiElement = document.createElement('span');
         emojiElement.textContent = sender;
-        emojiElement.className = 'emoji-spin'; // Add class for animation
+        emojiElement.className = 'emoji-tilt'; // Add class for animation
         messageElement.appendChild(emojiElement);
         messageElement.appendChild(document.createTextNode(': ' + initialMessage));
     } else {
