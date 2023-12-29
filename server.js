@@ -10,6 +10,7 @@ const app = express();
 const server = http.createServer(app);
 const PORT = 3000;
 const MAX_CONCURRENT_REQUESTS = 2;
+const COMPLETED_JOB_CLEANUP_DELAY = 1000 * 60 * 10; // how often to check for completed jobs to clean up (ms)
 const REDIS_URL = "redis://127.0.0.1:6379";
 
 // Create a Bull queue
@@ -100,6 +101,19 @@ app.post('/chat', async (req, res) => {
         res.status(500).send('Error adding job to queue');
     }
 });
+
+// Cleanup routine for completed jobs
+setInterval(async () => {
+    const completedJobs = await llamaQueue.getJobs(['completed']);
+    const timeDelay = Date.now() - COMPLETED_JOB_CLEANUP_DELAY;
+
+    for (let job of completedJobs) {
+        if (job.finishedOn && job.finishedOn < timeDelay) {
+            await job.remove();
+            console.log(`Removed completed job: ${job.id}`);
+        }
+    }
+}, COMPLETED_JOB_CLEANUP_DELAY);
 
 // delay function
 function delay(ms) {
