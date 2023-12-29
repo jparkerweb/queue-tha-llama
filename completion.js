@@ -5,6 +5,8 @@ const paramDefaults = {
   stop: ["</s>"]
 };
 
+const LLM_SERVER_URL = "http:127.0.0.1:8080"
+
 let generation_settings = null;
 
 
@@ -28,7 +30,7 @@ async function* llama(prompt, params = {}, config = {}) {
 
   const completionParams = { ...paramDefaults, ...params, prompt };
 
-  const response = await fetch("http:127.0.0.1:8080/completion", {
+  const response = await fetch(`${LLM_SERVER_URL}/completion`, {
     method: 'POST',
     body: JSON.stringify(completionParams),
     headers: {
