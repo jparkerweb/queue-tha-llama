@@ -1,20 +1,26 @@
-let currentMessageElement = null;
-let currentReader = null; // To hold the current reader
-let currentController = null; // For aborting the fetch request
-let randomQuestions = []; // To hold the random questions
-let currentRequestId = null; // To hold the current request ID
-let isAwaitingResponse = false; // Flag to track if we are waiting for a response
+// ===============================================
+// ==  Client-side JavaScript for the chat page ==
+// ===============================================
 
-const stopButton = document.getElementById("stopButton"); // Stop button element
-const sendButton = document.getElementById("sendButton"); // Send button element
-const randomQuestionButton = document.getElementById("randomQuestionButton"); // Random question button element
-const autoSendSwitch = document.getElementById("autoSendSwitch"); // Auto send switch element
-const inputBox = document.getElementById("input-box"); // Input box element
-const questionsFile = "/questions/facts.txt"; // Questions file
-const HEARTBEAT_INTERVAL = 1500; // Client heartbeat interval
+let currentMessageElement = null;   // To hold the current message element
+let currentReader = null;           // To hold the current reader
+let currentController = null;       // For aborting the fetch request
+let randomQuestions = [];           // To hold the random questions
+let currentRequestId = null;        // To hold the current request ID
+let isAwaitingResponse = false;     // Flag to track if we are waiting for a response
+let HEARTBEAT_INTERVAL = 1000 * 2;  // Setup a default value for the heartbeat interval (fetch from server later)
+
+const stopButton = document.getElementById("stopButton");                       // Stop button element
+const sendButton = document.getElementById("sendButton");                       // Send button element
+const randomQuestionButton = document.getElementById("randomQuestionButton");   // Random question button element
+const autoSendSwitch = document.getElementById("autoSendSwitch");               // Auto send switch element
+const inputBox = document.getElementById("input-box");                          // Input box element
+const questionsFile = "/questions/facts.txt";                                   // Questions file
+
 
 // Set the links to the chat and admin dashboard pages
 document.addEventListener('DOMContentLoaded', () => {
+    fetchHeartbeatInterval(); // Fetch the heartbeat interval from the server
     const currentUrl = window.location.href;
     const chatLink = document.getElementById('chatLink');
     const dashboardLink = document.getElementById('dashboardLink');
@@ -23,12 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboardLink.href = new URL('/admin/queues', currentUrl); // Append '/admin/queues' to the current URL
 });
 
+
 // Event listener for the auto send switch
 autoSendSwitch.addEventListener("change", function() {
     if (this.checked && !sendButton.disabled) {
         sendAutomatedMessage();
     }
 });
+
 
 // Event listener for the input box
 inputBox.addEventListener("keydown", function(event) {
@@ -40,6 +48,26 @@ inputBox.addEventListener("keydown", function(event) {
     }
 });
 
+
+// Fetch heartbeat interval from the server
+async function fetchHeartbeatInterval() {
+    try {
+        const response = await fetch('/heartbeat-interval');
+        const data = await response.json();
+        HEARTBEAT_INTERVAL = data.heartbeatInterval;
+        console.info('Heartbeat interval:', HEARTBEAT_INTERVAL)
+
+        // Set up the heartbeat interval
+        setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+    } catch (error) {
+        console.error('Error fetching heartbeat interval:', error);
+        // Set a default value in case of error
+        HEARTBEAT_INTERVAL = 1500;
+        setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+    }
+}
+
+
 // Function to send a heartbeat signal
 function sendHeartbeat() {
     if (currentRequestId && isAwaitingResponse) {
@@ -47,12 +75,17 @@ function sendHeartbeat() {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ requestId: currentRequestId })
-        }).catch(error => console.error('Error sending heartbeat:', error));
+        })
+        .then(response => response.text()) // Read the response as text
+        .then(message => console.log(message)) // Log the response
+        .catch(error => console.error('Error sending heartbeat:', error));
     }
 }
 
+
 // Set up an interval to send heartbeat signals
 setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+
 
 // Load the random questions from the file
 async function loadRandomQuestions() {
@@ -66,6 +99,7 @@ async function loadRandomQuestions() {
     }
 }
 
+
 // Set a random question in the input box
 function setRandomQuestion() {
     if (randomQuestions.length > 0) {
@@ -74,10 +108,12 @@ function setRandomQuestion() {
     }
 }
 
+
 // Generate a unique ID to identify the request
 function generateUniqueId() {
     return Math.random().toString(36).substr(2, 9);
 }
+
 
 // Send a message to the server
 async function sendMessage(showQuestion = true) {
@@ -121,6 +157,7 @@ async function sendMessage(showQuestion = true) {
         resetUIState();
     }
 }
+
 
 // Read the stream and append the chunks to the message element
 async function readStream(reader, requestId, prompt) {
@@ -167,6 +204,7 @@ async function readStream(reader, requestId, prompt) {
     }
 }
 
+
 // Abort the current request and turn off the auto send switch
 function abortCurrentRequest() {
     if (currentController) {
@@ -177,6 +215,7 @@ function abortCurrentRequest() {
     autoSendSwitch.checked = false; // Turn off the auto send switch
     resetUIState(); // Reset the UI state after aborting
 }
+
 
 // Reset the UI state
 function resetUIState() {
@@ -194,12 +233,14 @@ function resetUIState() {
     }
 }
 
+
 // Send an automated message
 function sendAutomatedMessage() {
     if (!sendButton.disabled) {
         sendMessage();
     }
 }
+
 
 // Create a message element and append it to the messages container
 function createMessageElement(sender, initialMessage) {
@@ -224,6 +265,7 @@ function createMessageElement(sender, initialMessage) {
     return messageElement;
 }
 
+
 // Append a chunk to the message element
 function appendToMessageElement(messageElement, text) {
     if (messageElement && text.trim()) {
@@ -247,11 +289,13 @@ function appendToMessageElement(messageElement, text) {
     }
 }
 
+
 // Scroll to the bottom of the messages container
 function scrollToBottom() {
     const messagesContainer = document.getElementById('messages');
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
+
 
 // Event listeners and initial state
 sendButton.addEventListener("click", sendMessage);
