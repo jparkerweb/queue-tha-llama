@@ -8,11 +8,11 @@ const { llama } = require('./completion.js');
 
 const app = express();
 const server = http.createServer(app);
-const PORT = 3000;
+const PORT = 3001;
 const MAX_CONCURRENT_REQUESTS = 2;
 const REDIS_URL = "redis://127.0.0.1:6379";
 const COMPLETED_JOB_CLEANUP_DELAY = 1000 * 60 * 10; // how often to check for completed jobs to clean up (ms)
-const INACTIVE_THRESHOLD = 5000; // Inactivity threshold (no heartbeats for this time)
+const INACTIVE_THRESHOLD = 1000 * 10; // how long to wait before flagging a client as inactive (ms)
 const ACTIVE_CLIENTS = new Set(); // Set to store active client IDs
 
 
