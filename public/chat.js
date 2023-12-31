@@ -3,6 +3,7 @@ let currentReader = null; // To hold the current reader
 let currentController = null; // For aborting the fetch request
 let randomQuestions = []; // To hold the random questions
 let currentRequestId = null; // To hold the current request ID
+let isAwaitingResponse = false; // Flag to track if we are waiting for a response
 
 const stopButton = document.getElementById("stopButton"); // Stop button element
 const sendButton = document.getElementById("sendButton"); // Send button element
@@ -10,6 +11,7 @@ const randomQuestionButton = document.getElementById("randomQuestionButton"); //
 const autoSendSwitch = document.getElementById("autoSendSwitch"); // Auto send switch element
 const inputBox = document.getElementById("input-box"); // Input box element
 const questionsFile = "/questions/facts.txt"; // Questions file
+const HEARTBEAT_INTERVAL = 1500; // Client heartbeat interval
 
 // Set the links to the chat and admin dashboard pages
 document.addEventListener('DOMContentLoaded', () => {
@@ -37,6 +39,20 @@ inputBox.addEventListener("keydown", function(event) {
         // Allow line breaks for Enter
     }
 });
+
+// Function to send a heartbeat signal
+function sendHeartbeat() {
+    if (currentRequestId && isAwaitingResponse) {
+        fetch('/heartbeat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ requestId: currentRequestId })
+        }).catch(error => console.error('Error sending heartbeat:', error));
+    }
+}
+
+// Set up an interval to send heartbeat signals
+setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
 
 // Load the random questions from the file
 async function loadRandomQuestions() {
@@ -86,6 +102,7 @@ async function sendMessage(showQuestion = true) {
 
     currentController = new AbortController();
     const signal = currentController.signal;
+    isAwaitingResponse = true; // Set the flag before sending the request
 
     try {
         const response = await fetch('/chat', {
@@ -169,6 +186,7 @@ function resetUIState() {
     stopButton.disabled = true;
     sendButton.disabled = false;
     randomQuestionButton.disabled = false;
+    isAwaitingResponse = false; // Reset the flag when the response is done
     inputBox.focus();
 
     if (autoSendSwitch.checked) {

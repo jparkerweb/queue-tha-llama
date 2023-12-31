@@ -10,8 +10,11 @@ const app = express();
 const server = http.createServer(app);
 const PORT = 3000;
 const MAX_CONCURRENT_REQUESTS = 2;
-const COMPLETED_JOB_CLEANUP_DELAY = 1000 * 60 * 10; // how often to check for completed jobs to clean up (ms)
 const REDIS_URL = "redis://127.0.0.1:6379";
+const COMPLETED_JOB_CLEANUP_DELAY = 1000 * 60 * 10; // how often to check for completed jobs to clean up (ms)
+const INACTIVE_THRESHOLD = 5000; // Inactivity threshold (no heartbeats for this time)
+const ACTIVE_CLIENTS = new Set(); // Set to store active client IDs
+
 
 // Create a Bull queue
 const llamaQueue = new Queue('llama-requests', REDIS_URL);
@@ -29,6 +32,13 @@ const responseStreams = new Map();
 
 // Process queue with limited concurrent jobs
 llamaQueue.process(MAX_CONCURRENT_REQUESTS, async (job) => {
+    // Check if the job was flagged as inactive
+    if (job.data.clientNotActive) {
+        console.log(`Skipping inactive job: ${job.id}`);
+        // You can directly complete the job here or perform any cleanup needed
+        return;
+    }
+
     const { requestId } = job.data;
     const res = responseStreams.get(requestId);
     if (!res) return; // If response stream is not found, skip processing
@@ -101,6 +111,33 @@ app.post('/chat', async (req, res) => {
         res.status(500).send('Error adding job to queue');
     }
 });
+
+// Endpoint to handle heartbeats
+app.post('/heartbeat', (req, res) => {
+    const { requestId } = req.body;
+    // Add the request ID to the set of active clients
+    if (requestId) {
+        ACTIVE_CLIENTS.add(requestId);
+        //
+        setTimeout(() => ACTIVE_CLIENTS.delete(requestId), INACTIVE_THRESHOLD);
+    }
+    res.sendStatus(204);
+});
+
+// Flagging a job as inactive
+setInterval(async () => {
+    const queuedJobs = await llamaQueue.getJobs(['waiting']);
+
+    for (let job of queuedJobs) {
+        if (!ACTIVE_CLIENTS.has(job.data.requestId) && !job.data.clientNotActive) {
+            // Add a flag to indicate that the client is not active
+            job.data.clientNotActive = true;
+            await job.update(job.data);
+            console.log(`Flagged job as inactive: ${job.id}`);
+        }
+    }
+}, INACTIVE_THRESHOLD);
+
 
 // Cleanup routine for completed jobs
 setInterval(async () => {
