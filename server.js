@@ -76,11 +76,11 @@ async function handleSlotUnavailableError(job) {
 // Stream LLaMA data to response
 async function streamLlamaData(prompt, res, jobId) {
     try {
-        console.log(`⇢ starting response to: ${prompt}`);
+        console.log(`→ → → starting response to: ${prompt}`);
         for await (const chunk of llama(prompt)) {
             res.write(`${chunk.data.content}`);
         }
-        console.log(`⇠ ended response to: ${prompt}`);
+        console.log(`← ← ← ended response to: ${prompt}`);
     } catch (error) {
         console.error('error:', error);
         if (error.message.includes('slot unavailable')) {
