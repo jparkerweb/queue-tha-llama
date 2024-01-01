@@ -21,7 +21,7 @@ let generation_settings = null;
 //      document.write(chunk.data.content)
 //    }
 //
-async function* llama(prompt, params = {}, config = {}) {
+export async function* llama(prompt, params = {}, config = {}) {
   let controller = config.controller;
 
   if (!controller) {
@@ -134,7 +134,7 @@ async function* llama(prompt, params = {}, config = {}) {
 //      document.write(chunk.detail.content)
 //    })
 //
-const llamaEventTarget = (prompt, params = {}, config = {}) => {
+export const llamaEventTarget = (prompt, params = {}, config = {}) => {
   const eventTarget = new EventTarget();
   (async () => {
     let content = "";
@@ -168,7 +168,7 @@ const llamaEventTarget = (prompt, params = {}, config = {}) => {
 //     const content = await llamaPromise(prompt)
 //     document.write(content)
 //
-const llamaPromise = (prompt, params = {}, config = {}) => {
+export const llamaPromise = (prompt, params = {}, config = {}) => {
   return new Promise(async (resolve, reject) => {
     let content = "";
     try {
@@ -185,18 +185,16 @@ const llamaPromise = (prompt, params = {}, config = {}) => {
 /**
  * (deprecated)
  */
-const llamaComplete = async (params, controller, callback) => {
+export const llamaComplete = async (params, controller, callback) => {
   for await (const chunk of llama(params.prompt, params, { controller })) {
     callback(chunk);
   }
 }
 
 // Get the model info from the server. This is useful for getting the context window and so on.
-const llamaModelInfo = async () => {
+export const llamaModelInfo = async () => {
   if (!generation_settings) {
     generation_settings = await fetch("/model.json").then(r => r.json());
   }
   return generation_settings;
 }
-
-module.exports = { llama };

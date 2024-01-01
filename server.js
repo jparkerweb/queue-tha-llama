@@ -6,15 +6,16 @@
 // a dashboard for the queue. The chatbot uses the llama function from completion.js
 // to generate text based on the prompt provided by the client.
 
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
-const express = require('express');
-const http = require('http');
-const Queue = require('bull');
-const path = require('path');
-const { createBullBoard } = require('bull-board');
-const { BullAdapter } = require('bull-board/bullAdapter');
-const { llama } = require('./completion.js');
+import express from 'express'
+import http from 'http'
+import Queue from 'bull'
+import path from 'path'
+import { createBullBoard } from 'bull-board'
+import { BullAdapter } from 'bull-board/bullAdapter.js'
+import { llama } from './completion.js'
 
 const app = express();
 const server = http.createServer(app);
@@ -46,9 +47,10 @@ app.use('/admin/queues', router);
 
 
 // Middleware
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
 
 // Store response streams by requestId
 const responseStreams = new Map();
