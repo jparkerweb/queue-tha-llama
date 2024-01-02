@@ -1,8 +1,13 @@
+// ------------------------------------------------------------------
+// Description: Javascript API connector for llama.cpp
+// orginal source: https://github.com/ggerganov/llama.cpp/blob/master/examples/server/public/completion.js
+// ------------------------------------------------------------------
+
 // import environment variables from .env file
 import dotenv from 'dotenv';
 dotenv.config();
 
-
+// default parameters for llama.cpp
 const paramDefaults = {
   stream: true,
   n_predict: 500,
@@ -10,6 +15,7 @@ const paramDefaults = {
   stop: ["</s>"]
 };
 
+// URL of the llama.cpp server
 const LLM_SERVER_URL = process.env.LLM_SERVER_URL || "http:127.0.0.1:8080";
 
 let generation_settings = null;
@@ -105,7 +111,7 @@ export async function* llama(prompt, params = {}, config = {}) {
           if (result.error) {
             result.error = JSON.parse(result.error);
             if (result.error.content.includes('slot unavailable')) {
-              // Throw an error to be caught by the server-side logic
+              // Throw an error to be caught by upstream callers
               throw new Error('slot unavailable');
             } else {
               console.error(`llama.cpp error: ${result.error.content}`);
