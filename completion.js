@@ -1,3 +1,8 @@
+// import environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
+
+
 const paramDefaults = {
   stream: true,
   n_predict: 500,
@@ -5,7 +10,7 @@ const paramDefaults = {
   stop: ["</s>"]
 };
 
-const LLM_SERVER_URL = "http:127.0.0.1:8080"
+const LLM_SERVER_URL = process.env.LLM_SERVER_URL || "http:127.0.0.1:8080";
 
 let generation_settings = null;
 
