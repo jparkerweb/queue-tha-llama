@@ -17,23 +17,23 @@ import path from 'path';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter.js';
 import { ExpressAdapter } from '@bull-board/express';
-import { llama } from './completion.js';
+import { llama } from './llm-api-connector.js';
 
 const app = express();
 const server = http.createServer(app);
 
-// ---------------------------
-// -- environment variables --
-// ---------------------------
+// --------------------------------------------
+// -- environment variables loaded from .env --
+// --------------------------------------------
 const PORT = process.env.PORT || 3001;
 const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const MAX_CONCURRENT_REQUESTS = parseInt(process.env.MAX_CONCURRENT_REQUESTS) || 2;
 const COMPLETED_JOB_CLEANUP_DELAY = parseInt(process.env.COMPLETED_JOB_CLEANUP_DELAY) || 1000 * 60 * 5;
 const INACTIVE_THRESHOLD = parseInt(process.env.INACTIVE_THRESHOLD) || 1000 * 10;
+
+// store active clients by requestId
 const ACTIVE_CLIENTS = new Map();
-
-
 // Store response streams by requestId
 const responseStreams = new Map();
 
