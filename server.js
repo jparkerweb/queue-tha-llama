@@ -9,13 +9,15 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import express from 'express'
-import http from 'http'
-import Queue from 'bull'
-import path from 'path'
-import { createBullBoard } from 'bull-board'
-import { BullAdapter } from 'bull-board/bullAdapter.js'
-import { llama } from './completion.js'
+import express from 'express';
+import http from 'http';
+import bullmqPkg from 'bullmq';
+const { Queue, Worker } = bullmqPkg;
+import path from 'path';
+import { createBullBoard } from '@bull-board/api';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter.js';
+import { ExpressAdapter } from '@bull-board/express';
+import { llama } from './completion.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -23,27 +25,17 @@ const server = http.createServer(app);
 // ---------------------------
 // -- environment variables --
 // ---------------------------
-// Port for the server to listen on
 const PORT = process.env.PORT || 3001;
-// Redis URL
-const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
-// how many jobs to process concurrently
+const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
+const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const MAX_CONCURRENT_REQUESTS = parseInt(process.env.MAX_CONCURRENT_REQUESTS) || 2;
-// how often to check for completed jobs to clean up (ms)
 const COMPLETED_JOB_CLEANUP_DELAY = parseInt(process.env.COMPLETED_JOB_CLEANUP_DELAY) || 1000 * 60 * 5;
-// how long to wait before flagging a client as inactive (ms)
 const INACTIVE_THRESHOLD = parseInt(process.env.INACTIVE_THRESHOLD) || 1000 * 5;
-// Map to store active client IDs and their timeout IDs
 const ACTIVE_CLIENTS = new Map();
 
 
-// Create a Bull queue
-const llamaQueue = new Queue('llama-requests', REDIS_URL);
-
-
-// Set up Bull Board
-const { router } = createBullBoard([new BullAdapter(llamaQueue)]);
-app.use('/admin/queues', router);
+// Store response streams by requestId
+const responseStreams = new Map();
 
 
 // Middleware
@@ -52,23 +44,38 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store response streams by requestId
-const responseStreams = new Map();
+
+// Create a BullMQ queue
+const llamaQueue = new Queue('llama-requests', { connection: {
+    host: REDIS_HOST,
+    port: REDIS_PORT
+}});
+
+
+// Set up Bull Board
+const bullBoardAdapter = new BullMQAdapter(llamaQueue);
+const serverAdapter = new ExpressAdapter();
+createBullBoard({
+    queues: [bullBoardAdapter],
+    serverAdapter: serverAdapter,
+});
+serverAdapter.setBasePath('/admin/queues');
+app.use('/admin/queues', serverAdapter.getRouter());
 
 
 // Process queue with limited concurrent jobs
-llamaQueue.process(MAX_CONCURRENT_REQUESTS, async (job) => {
+const worker = new Worker('llama-requests', async (job) => {
     // Check if the job was flagged as inactive
     if (job.data.clientNotActive) {
         console.log(`Skipping inactive job: ${job.id}`);
         // You can directly complete the job here or perform any cleanup needed
         return;
     }
-
+    
     const { requestId } = job.data;
     const res = responseStreams.get(requestId);
     if (!res) return; // If response stream is not found, skip processing
-
+    
     try {
         await streamLlamaData(job.data.prompt, res, job); // Pass the entire job object
         responseStreams.delete(requestId); // Clean up after streaming
@@ -78,6 +85,12 @@ llamaQueue.process(MAX_CONCURRENT_REQUESTS, async (job) => {
             await handleSlotUnavailableError(job); // Pass the entire job object here
         }
     }
+}, { 
+    connection: {
+        host: REDIS_HOST,
+        port: REDIS_PORT
+    },
+    concurrency: MAX_CONCURRENT_REQUESTS
 });
 
 
@@ -86,14 +99,15 @@ async function handleSlotUnavailableError(job) {
     const jobId = job.id;
     console.warn('slot unavailable, retrying job:', jobId);
     try {
-        await delay(1000); // Delay before retrying
+        await delay(2000); // Delay before retrying
 
         // Generate a new unique job ID for retry
         const retryJobId = `retry-${jobId}-${Date.now()}`;
         console.log('Retrying job with new ID:', retryJobId);
 
         // Re-add the job with the same data and the new job ID
-        await llamaQueue.add(job.data, { jobId: retryJobId, delay: 1000 });
+        await job.remove(); // Remove the original job from the queue
+        await llamaQueue.add('chat-retry', job.data, { jobId: retryJobId, delay: 2000 });
     } catch (retryError) {
         console.error('Error retrying job:', retryError, 'Original job ID:', jobId);
     }
@@ -101,16 +115,21 @@ async function handleSlotUnavailableError(job) {
 
 
 // Stream LLaMA data to response
-async function streamLlamaData(prompt, res, jobId) {
+async function streamLlamaData(prompt, res, job) {
     try {
-        console.log(`→ → → starting response to: ${prompt}`);
+        const shortPrompt = prompt.slice(0, 40); // short prompt for logging
+        console.log(`→ → → starting response to: ${shortPrompt}...`);
+
+        // Stream the data to the response
         for await (const chunk of llama(prompt)) {
             res.write(`${chunk.data.content}`);
         }
-        console.log(`← ← ← ended response to: ${prompt}`);
+
+        ACTIVE_CLIENTS.delete(job.id); // Remove the client from the active list
+        console.log(`← ← ← ended response to: ${shortPrompt}...`);
     } catch (error) {
         if (error.message.includes('slot unavailable')) {
-            await handleSlotUnavailableError(jobId); // Use jobId here
+            await handleSlotUnavailableError(job); // Use job here
         } else {
             console.error('Error streaming data:', error);
             res.end('Error streaming data');
@@ -131,9 +150,14 @@ app.get('/heartbeat-interval', (req, res) => {
 
 // Endpoint to handle chat messages
 app.post('/chat', async (req, res) => {
-    const { prompt, requestId } = req.body;
+    let { prompt, requestId } = req.body;
+
+    // Ensure prompt and requestId are strings
+    prompt = String(prompt);
+    requestId = String(requestId);
+
     try {
-        const job = await llamaQueue.add({ prompt, requestId }, { jobId: requestId });
+        const job = await llamaQueue.add('chat', { prompt, requestId }, { jobId: requestId });
         console.log('Added job with ID:', job.id); // Log the job ID
 
         // Initialize the entry for this client in ACTIVE_CLIENTS
@@ -162,14 +186,17 @@ app.post('/heartbeat', (req, res) => {
 
         // Set a new timeout for this client
         const timeoutId = setTimeout(() => {
-            ACTIVE_CLIENTS.delete(requestId);
-            console.log(`Removed inactive client: ${requestId}`);
+            if (ACTIVE_CLIENTS.has(requestId)) { // Check if the client is still active
+                ACTIVE_CLIENTS.delete(requestId);
+                console.log(`Removed inactive client: ${requestId}`);
+            }
         }, INACTIVE_THRESHOLD);
 
         // Store the new timeout ID
         ACTIVE_CLIENTS.set(requestId, timeoutId);
     }
     
+    // console.log(`Heartbeat received for ${requestId}`);
     res.status(200).send(`Heartbeat received for ${requestId}`);
 });
 
@@ -182,7 +209,8 @@ setInterval(async () => {
         if (!ACTIVE_CLIENTS.has(job.data.requestId) && !job.data.clientNotActive) {
             // Add a flag to indicate that the client is not active
             job.data.clientNotActive = true;
-            await job.update(job.data);
+            // await job.update(job.data);
+            await job.remove(); // Remove the job from the queue
             console.log(`Flagged job as inactive: ${job.id}`);
         }
     }
@@ -209,6 +237,7 @@ function delay(ms) {
 }
 
 
+// Start the server
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Redis dashboard running on http://localhost:${PORT}/admin/queues`);

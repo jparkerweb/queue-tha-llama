@@ -77,7 +77,12 @@ function sendHeartbeat() {
             body: JSON.stringify({ requestId: currentRequestId })
         })
         .then(response => response.text()) // Read the response as text
-        .then(message => console.log(message)) // Log the response
+        .then(message => { // Log the message and show the heartbeat indicator
+            console.log(message);
+            const heartbeatIndicator = document.getElementById('heartbeat-indicator');
+            heartbeatIndicator.style.display = 'block';
+            setTimeout(() => heartbeatIndicator.style.display = 'none', 1000); // Hide after 1 second
+        })
         .catch(error => console.error('Error sending heartbeat:', error));
     }
 }
