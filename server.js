@@ -474,4 +474,5 @@ function delay(ms) {
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Redis dashboard running on http://localhost:${PORT}/admin/queues`);
+    console.log(`Chroma dashboard running on http://localhost:${PORT}/list-collections`);
 });
