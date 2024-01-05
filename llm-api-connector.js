@@ -7,13 +7,17 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+const temperature =process.env.LLM_SERVER_TEMPERATURE || 0.7
+const stop = process.env.LLM_SERVER_STOP_TOKENS || ["</s>"]
+
 // default parameters for llama.cpp
 const paramDefaults = {
   stream: true,
   n_predict: 500,
-  temperature: 0.2,
-  stop: ["</s>"]
+  temperature: 0.1,
+  stop: ["</s>", "LLM:", "User:"],
 };
+
 
 // URL of the llama.cpp server
 const LLM_SERVER_URL = process.env.LLM_SERVER_URL || "http:127.0.0.1:8080";
