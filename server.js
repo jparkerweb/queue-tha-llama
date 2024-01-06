@@ -50,7 +50,7 @@ const ACTIVE_COLLECTIONS = new Map();
 const responseStreams = new Map();
 // Store n_ctx value from the LLM model.json endpoint
 const n_ctx = await fetchNCtxValue();
-const CHUNK_TOKEN_SIZE = Math.floor(n_ctx / 10);;
+const CHUNK_TOKEN_SIZE = Math.floor(n_ctx / 10);
 const CHUNK_TOKEN_OVERLAP = Math.max(Math.floor(CHUNK_TOKEN_SIZE / 10), 50);
 console.log(`n_ctx: ${n_ctx}, chunk token size: ${CHUNK_TOKEN_SIZE}, chunk token overlap: ${CHUNK_TOKEN_OVERLAP}`);
 
