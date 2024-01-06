@@ -313,7 +313,7 @@ app.post('/chat', async (req, res) => {
 
     try {
         // setup prompt instructions
-        const promptInstructions = "This is a conversation between USER and LLM, a friendly chatbot. LLM is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision."
+        const promptInstructions = process.env.LLM_PROMPT_INSTRUCTIONS
         
         // embed the prompt
         const textChunksAndEmbeddings = await embedText(prompt, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.error);
