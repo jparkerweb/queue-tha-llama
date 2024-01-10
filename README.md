@@ -1,6 +1,8 @@
 # Queue tha Llama
 This is a web-based chat application that integrates Large Language Model (LLM) capabilities with Bull Queue, Redis, and Chroma. It handles concurrent chat sessions with advanced queue management, maintains robust client-server communication with heartbeat signals, utilizes a RAG model for chat memory, and smartly manages inactive clients and job cleanups for a seamless chat experience.
 
+<img src="./docs/chat.jpg" width="800">
+
 ---
 
 ## Prerequisites
