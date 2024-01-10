@@ -10,14 +10,24 @@ body {
 }
 
 .title {
-    font-size: 2em;
+    font-size: 2.5em;
     margin-bottom: 10px;
-    font-weight: bold; /* Optional: makes the text bold */
-    color: transparent; /* Makes the text color transparent */
-    background-image: linear-gradient(to right, #007bff, #9adbfb); /* Blue gradient */
-    background-clip: text; /* Clips the background to the text */
-    -webkit-background-clip: text; /* For WebKit browsers */
-    -webkit-text-fill-color: transparent; /* For WebKit browsers */
+}
+
+.title__llama {
+    position: relative;
+    top: -.1em;
+}
+.title__link {
+    background-image: linear-gradient(135deg, #00C0FA 0%, #4261ED 50%, #6717CC 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    width: fit-content;
+    margin-top: 0px;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 600;
 }
 
 div#collection {
@@ -52,13 +62,8 @@ a:hover {
 }
 
 .diagonal-stripes {
-    background-image: repeating-linear-gradient(
-        45deg, /* Angle of the stripes */
-        #333333, /* First color */
-        #333333 10px, /* Width of the first color */
-        #444444 10px, /* Second color starts */
-        #444444 20px /* Width of the second color */
-    );
+    background-image: linear-gradient(45deg, #282e42 11.11%, #191c24 11.11%, #191c24 50%, #282e42 50%, #282e42 61.11%, #191c24 61.11%, #191c24 100%);
+    background-size: 12.73px 12.73px;
 }
 
 #chat-container {
@@ -75,10 +80,10 @@ a:hover {
     height: 300px;
     overflow-y: auto;
     margin-bottom: 10px;
-    background-image: url('background.png'); /* Background image */
+    background-image: url('background2.png'); /* Background image */
     background-position: center; /* Center the background image */
     background-repeat: no-repeat; /* Do not repeat the image */
-    background-size: auto; /* Cover the entire container */
+    background-size: 250px;
     background-attachment: fixed; /* Fix background relative to the viewport */
 }
 
