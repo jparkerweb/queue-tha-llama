@@ -24,10 +24,10 @@ const chromaClient = new ChromaClient({ path: CHROMA_SERVER_URL, });
 export async function chromaHeartbeat() {
 	const heartbeat = await chromaClient.heartbeat()
 		.then((response) => {
-			console.log("🎉 Chroma Vector Database Online: ", response);
+			console.log("(ツ) → Chroma Vector Database Online: ", response);
 		})
 		.catch((error) => {
-			console.error("❌ Chroma Vector Database Offline: ", error);
+			console.error("X → Chroma Vector Database Offline: ", error);
 			process.exit(1); // exit with error
 		});
 }
@@ -37,7 +37,7 @@ export async function chromaHeartbeat() {
 // -- create collection --
 // -----------------------
 export async function createCollection(collectionName) {
-	console.log(`⇢ createCollection: ${collectionName}`);
+	console.log(`→ createCollection: ${collectionName}`);
 	const collection = await chromaClient.getOrCreateCollection({
 		name: collectionName,
 		metadata: {
@@ -51,7 +51,7 @@ export async function createCollection(collectionName) {
 // -- delete collection --
 // -----------------------
 export async function deleteCollection(collectionName) {
-	console.log(`⇢ deleteCollection: ${collectionName}`);
+	console.log(`→ deleteCollection: ${collectionName}`);
 	await chromaClient.deleteCollection({
 		name: collectionName,
 	});
@@ -68,7 +68,7 @@ export async function addToCollection(
 	metadatas,
 	documents
 ) {
-	console.log(`⇢ addToCollection: ${collectionName}`);
+	console.log(`→ addToCollection: ${collectionName}`);
 	const collection = await chromaClient.getOrCreateCollection({
 		name: collectionName,
 	}).catch((error) => {
@@ -76,7 +76,7 @@ export async function addToCollection(
 		retrun;
 	});
 
-	console.log(`⇢ ⇢ embeddings length: ${embeddings.length}`);
+	console.log(`→ → embeddings length: ${embeddings.length}`);
 
 	await collection.add({
 		ids: ids,
@@ -100,7 +100,7 @@ export async function queryCollectionEmbeddings(
 	queryEmbeddings,
 	nResults = 10
 ) {
-	console.log(`⇢ queryCollectionEmbeddings: ${collectionName}`);
+	console.log(`→ queryCollectionEmbeddings: ${collectionName}`);
 	const collection = await chromaClient.getCollection({
 		name: collectionName,
 	});
@@ -117,8 +117,8 @@ export async function queryCollectionEmbeddings(
 // -- delete from collection --
 // ----------------------------
 export async function deleteFromCollection(collectionName, ids) {
-	console.log(`⇢ deleteFromCollection: ${collectionName}`);
-	console.log(`⇢ ⇢ ids: ${ids}`);
+	console.log(`→ deleteFromCollection: ${collectionName}`);
+	console.log(`→ → ids: ${ids}`);
 	const collection = await chromaClient.getCollection({
 		name: collectionName,
 	});
@@ -132,7 +132,7 @@ export async function deleteFromCollection(collectionName, ids) {
 // -- list collections --
 // ----------------------
 export async function listCollections() {
-	console.log("⇢ listCollections");
+	console.log("→ listCollections");
 	const collections = await chromaClient.listCollections();
 	return collections;
 }
@@ -142,7 +142,7 @@ export async function listCollections() {
 // -- delete all collections --
 // ----------------------------
 export async function deleteAllCollections() {
-	console.log("⇢ deleteAllCollections");
+	console.log("→ deleteAllCollections");
 	const collections = await chromaClient.listCollections();
 
 	for (const collection of collections) {
@@ -155,7 +155,7 @@ export async function deleteAllCollections() {
 // -- peek at collection --
 // ------------------------
 export async function peekCollection(collectionName, limit = 10) {
-	console.log(`⇢ peekCollection: ${collectionName}`);
+	console.log(`→ peekCollection: ${collectionName}`);
 	const collection = await chromaClient.getCollection({
 		name: collectionName,
 	});

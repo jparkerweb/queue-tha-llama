@@ -35,10 +35,10 @@ export async function redisHeartbeat() {
             url: `redis://${REDIS_HOST}:${REDIS_PORT}`
         });
         await redisClient.connect();
-        console.log('🎉 Redis Online');
+        console.log('(ツ) → Redis Online');
         await redisClient.disconnect();
     } catch (error) {
-        console.error(`❌ Redis Offline: ${error}`);
+        console.error(`X → Redis Offline: ${error}`);
         process.exit(1); // Exit the process with an error code
     }
 }
