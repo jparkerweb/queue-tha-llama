@@ -24,7 +24,6 @@ const ACTIVE_CLIENTS = new Map();                                               
 const ACTIVE_COLLECTIONS = new Map();                                               // store active collections by collectionName
 const responseStreams = new Map();                                                  // Store response streams by requestId
 
-
 export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
     setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP);
     const llamaQueue = setupLlamaQueue();
@@ -162,7 +161,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
     // -- Endpoint to handle chat messages --
     // --------------------------------------
     app.post('/chat', async (req, res) => {
-        let { prompt, requestId, COLLECTION_NAME } = req.body;
+        let { prompt, requestId, COLLECTION_NAME, MESSAGE_CONTEXT = '' } = req.body;
 
         // Ensure prompt and requestId are strings
         prompt = String(prompt);
@@ -172,8 +171,9 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
         try {
             // generate a prompt GUID
             const promptGUID = generateGUID();
-            // setup prompt instructions
-            const promptInstructions = process.env.LLM_PROMPT_INSTRUCTIONS
+            // setup prompt instructions and add any passed context
+            const promptInstructions = process.env.LLM_PROMPT_INSTRUCTIONS + MESSAGE_CONTEXT;
+            const prefixPrompt = process.env.LLM_PREFIX_PROMPT;
             
             // embed the prompt
             const textChunksAndEmbeddings = await embedText(prompt, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.error);
@@ -211,15 +211,12 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
             }
 
             // finalize fullPrompt
-            if (previousPrompts !== "") {
-                fullPrompt = `${promptInstructions}${previousPrompts}${prmoptSeperator}USER: ${originalPrompt}\nLLM:`;
-            } else {
-                fullPrompt = `${promptInstructions}${prmoptSeperator}USER: ${originalPrompt}\nLLM:`;
-            }
+            fullPrompt = `${promptInstructions}${previousPrompts}${prmoptSeperator}${prefixPrompt}USER: ${originalPrompt}\nLLM:`;
 
             // add job to queue
             const job = await llamaQueue.add('chat', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
             console.log('Added job with ID:', job.id); // Log the job ID
+            console.log('fullPrompt:', fullPrompt); // Log the fullPrompt
 
             let success = true;
             for (const textChunksAndEmbedding of textChunksAndEmbeddings) {
