@@ -24,10 +24,12 @@ export async function htmlListCollections(collectionsList) {
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
+                overflow: hidden;
             }
             .wrapper {
-                max-width: 800px;
-                margin: 0 auto 150px auto;
+                max-width: 1024px;
+                max-height: 100vh;
+                margin: auto;
                 padding: 20px;
             }
             h1 {
@@ -61,6 +63,24 @@ export async function htmlListCollections(collectionsList) {
             .button--delete {
                 background-color: #6717CC;
                 background-image: linear-gradient(135deg, #00C0FA 0%, #4261ED 50%, #6717CC 100%);
+            }
+            #collections {
+                max-height: calc(100vh - 200px);
+                overflow-y: auto;
+            }
+            /* Modern scrollbar styles */
+            #collections::-webkit-scrollbar {
+                width: 8px; /* Adjust the width of the scrollbar */
+            }
+            #collections::-webkit-scrollbar-track {
+                background: #191C24; /* Track color */
+            }
+            #collections::-webkit-scrollbar-thumb {
+                background: #00C0FA; /* Handle color */
+                border-radius: 4px; /* Handle border radius */
+            }
+            #collections::-webkit-scrollbar-thumb:hover {
+                background: #00C0FA; /* Handle color on hover */
             }
             ul {
                 display: inline-flex;
