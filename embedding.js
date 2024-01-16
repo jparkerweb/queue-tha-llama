@@ -10,6 +10,7 @@ import { env, pipeline, AutoTokenizer } from '@xenova/transformers';
 
 env.localModelPath = 'models/';
 env.allowRemoteModels = false;
+const ONNX_EMBEDDING_MODEL = process.env.ONNX_EMBEDDING_MODEL || 'all-MiniLM-L6-v2';
 
 // Function to create embeddings from text
 export async function embedText(largeText, maxChunkTokenCount = 100, chunkOverlap = 10) {
@@ -46,7 +47,7 @@ export async function embedText(largeText, maxChunkTokenCount = 100, chunkOverla
 async function chunkText(text, maxTokens = 100, overlap = 10) {
     console.log(`maxTokens: ${maxTokens}, overlap: ${overlap}`);
 
-    const tokenizer = await AutoTokenizer.from_pretrained('all-MiniLM-L6-v2');
+    const tokenizer = await AutoTokenizer.from_pretrained(ONNX_EMBEDDING_MODEL);
     const sentences = text.match(/[^.!?]+[.!?]+|\s*\n\s*/g) || [text]; // Split by sentences or new lines
 
     let chunks = [];
@@ -88,7 +89,7 @@ async function chunkText(text, maxTokens = 100, overlap = 10) {
 
 
 // Create the embedding pipeline
-const generateEmbedding = await pipeline('feature-extraction', 'all-MiniLM-L6-v2', {
+const generateEmbedding = await pipeline('feature-extraction', ONNX_EMBEDDING_MODEL, {
     quantized: false,
 });
 

@@ -14,13 +14,16 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 
-import { chromaHeartbeat, testChormaMethods } from './chroma.js';
+import { chromaHeartbeat } from './chroma.js';
 import { setupApiRoutes } from './api-routes.js';
 import { redisHeartbeat } from './queue-handler.js';
+import { embeddingTest } from './embedding_test.js';
+import { toBoolean } from './utils.js';
 
 const PORT = process.env.PORT || 3001; // Port for the Express Server to listen on
 const LLM_SERVER_URL = process.env.LLM_SERVER_URL || 'http://localhost:8080';
 const INDEX_HTML_FILE = process.env.INDEX_HTML_FILE || 'index.html';
+const RUN_STARTUP_EMBEDDING_TEST = toBoolean(process.env.RUN_STARTUP_EMBEDDING_TEST) || false;
 
 
 console.log('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'); // Clears the console
@@ -30,7 +33,9 @@ const n_ctx = await fetchNCtxValue();
 await redisHeartbeat();
 // (ツ) → Check if Chroma server is running
 await chromaHeartbeat();
-// await testChormaMethods("test_collection");
+// (ツ) → Run embedding test
+if (RUN_STARTUP_EMBEDDING_TEST) { await embeddingTest(); }
+
 
 // calculate chunk token size and overlap
 const CHUNK_TOKEN_SIZE = Math.floor(n_ctx / 10);
