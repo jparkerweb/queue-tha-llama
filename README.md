@@ -70,3 +70,4 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
     default site ⇢ [http://localhost:3001/admin/queues/](http://localhost:3001/admin/queues/)
   - Chroma Collections Dashboard  
     default site ⇢ [http://localhost:3001/list-collections]
+ 
