@@ -13,6 +13,8 @@ dotenv.config();
 // -- load Chroma client --
 // ------------------------
 const CHROMA_SERVER_URL = process.env.CHROMA_SERVER_URL || "http://localhost:8001";
+const CHROMA_DISTANCE_FUNCTION = process.env.CHROMA_DISTANCE_FUNCTION || "cosine";
+
 import { ChromaClient } from "chromadb";
 const chromaClient = new ChromaClient({ path: CHROMA_SERVER_URL, });
 
@@ -36,12 +38,13 @@ export async function chromaHeartbeat() {
 // -----------------------
 // -- create collection --
 // -----------------------
-export async function createCollection(collectionName) {
+export async function createCollection(collectionName, description = "a collection of embeddings") {
 	console.log(`→ createCollection: ${collectionName}`);
 	const collection = await chromaClient.getOrCreateCollection({
 		name: collectionName,
 		metadata: {
-			description: "a collection of embeddings",
+			"hnsw:space": CHROMA_DISTANCE_FUNCTION,
+			description: description,
 		},
 	});
 }
