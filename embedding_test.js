@@ -43,9 +43,9 @@ export async function embeddingTest() {
                 id,
                 embedding,
                 {
+                    _emoji: t[0],
+                    _lang: t[1],
                     source: "embedding_test",
-                    emoji: t[0],
-                    lang: t[1],
                     tokenCount: tokenCount,
                     dateAdded: new Date().toISOString(),
                 },
