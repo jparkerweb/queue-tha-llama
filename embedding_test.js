@@ -21,7 +21,7 @@ export async function embeddingTest() {
         ['🐄','ZH','敏捷的棕色狐狸跳过了懒惰的牛。'],
         ['🐄','ES','El veloz zorro marrón saltó sobre la vaca perezosa.'],
         ['🐄','EN','was the cow lazy?'],
-        ['🐒','EN','Monkeys like to eat bananas..'],
+        ['🐒','EN','Primates are known to eat bananas.'],
         ['🐒','EN','Some monkeys live in trees.'],
         ['🐒','DE','Einige Affen leben in Bäumen.'],
         ['🐒','FR','Certains singes vivent dans les arbres.'],
