@@ -178,7 +178,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
             // embed the prompt
             const textChunksAndEmbeddings = await embedText(prompt, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.error);
 
-            // query for similar text to send with the prompt
+            // setup variables for building prompts
             let fullPrompt = prompt;
             let previousPrompts = "";
             let originalPrompt = prompt;
