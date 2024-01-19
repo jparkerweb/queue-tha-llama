@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcription Service</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            color: white;
+            background: #191C24;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .wrapper {
+            width: 95vw;
+            max-width: 800px;
+            margin: 0 auto 50px auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .page-title {
+            width: fit-content;
+            margin-top: 0px;
+            margin-left: auto;
+            margin-right: auto;
+            font-size: 2.7em;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0;
+        }
+        .page-sub-title {
+            font-size: 1.1em;
+            font-weight: 100;
+            letter-spacing: 1.6px;
+            margin-bottom: 0;
+        }
+        div#file-list {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+        .file-item {
+            cursor: pointer;
+            border: 1px solid blue;
+            margin: 10px;
+            border-radius: 5px;
+            padding: 4px 8px;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            display: inline-block;
+            margin: 7px;
+            cursor: pointer;
+            border-radius: 10px;
+            font-size: 0.9em;
+            line-height: 1.38;
+            background-color: #6717CC;
+            background-image: linear-gradient(135deg, #00C0FA 0%, #4261ED 50%, #6717CC 100%);
+            transition: all 0.2s ease-in-out;
+            user-select: none;
+        }
+        .file-item.selected,
+        .file-item:hover {
+            border-color: hotpink;
+            background-color: hotpink;
+            background-image: linear-gradient(135deg, #fa00eb 0%, #7c17cc 100%);
+        }
+
+        #transcription {
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px dashed lightblue;
+            padding: 25px 20px;
+            border-radius: 15px;
+            word-break: break-word;
+        }
+        #transcription.-hidden {
+            display: none;
+        }
+        /* Modern scrollbar styles */
+        #transcription::-webkit-scrollbar { 
+            width: 8px; /* Adjust the width of the scrollbar */
+        }
+        #transcription::-webkit-scrollbar-track {
+            background: #191C24; /* Track color */
+        }
+        #transcription::-webkit-scrollbar-thumb {
+            background: #00C0FA; /* Handle color */
+            border-radius: 4px; /* Handle border radius */
+        }
+        #transcription::-webkit-scrollbar-thumb:hover {
+            background: #00C0FA; /* Handle color on hover */
+        }
+        #overlay {
+            position: fixed;
+            display: none;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5); /* Black with opacity */
+            z-index: 2; /* Positioned under the spinner */
+            cursor: pointer; /* Optional: changes the cursor to a pointer */
+        }
+        .spinner-wraper {
+            position: relative;
+            margin-top: 15px;
+        }
+        #spinner {
+            border: 4px solid rgba(0, 0, 0, .1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s ease infinite;
+            position: fixed; /* or absolute */
+            position: relative;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 7;
+        }
+    
+        @keyframes spin {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+        a {
+            color: #00C0FA;
+            text-decoration: none;
+        }
+        a:hover {
+            color: #00C0FA;
+            text-decoration: underline;
+        }
+        a:visited { color: #00C0FA; }
+        a:active { color: #00C0FA; }
+        .accent { color: hotpink; }
+    </style>    
+</head>
+<body>
+    <h1 class="page-title">🔊 <a href="https://github.com/ggerganov/whisper.cpp" target="_blank">Whisper.cpp</a> Audio Transcriber</h1>
+    <h3 class="page-sub-title">List of files in the <span class="accent">./media</span> folder. Click and item to transcript its audio.</h3>
+    <div class="wrapper">
+        <div id="file-list"></div>
+        <div class="spinner-wraper">
+            <div id="spinner" style="display:none;"></div>
+        </div>
+        <p id="transcription" class="-hidden"></p>
+    </div>
+    <div id="overlay" style="display:none;"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch the list of audio files from the server
+            fetch('/list-audio-files')
+                .then(response => response.json())
+                .then(data => {
+                    const fileList = document.getElementById('file-list');
+                    data.files.forEach(file => {
+                        const fileItem = document.createElement('div');
+                        fileItem.classList.add('file-item');
+                        fileItem.textContent = file;
+                        fileItem.onclick = () => {
+                            const elements = document.getElementsByClassName("file-item");
+                            for (let i = 0; i < elements.length; i++) {
+                                elements[i].classList.remove('selected');
+                            }
+                            const transcriptionElement = document.getElementById('transcription');
+                            fileItem.classList.add('selected');
+                            transcriptionElement.innerHTML = '';
+                            transcriptionElement.classList.add('-hidden');
+                            transcribe(file);
+                        }
+                        fileList.appendChild(fileItem);
+                    });
+                })
+                .catch(error => console.error('Error fetching file list:', error));
+        });
+
+
+        // Send the filename to the server for transcription
+        function transcribe(filename) {
+            const transcriptionElement = document.getElementById('transcription');
+            const overlayElement = document.getElementById('overlay');
+            const spinnerElement = document.getElementById('spinner');
+            overlayElement.style.display = 'block'; // Show overlay
+            spinnerElement.style.display = 'block'; // Show spinner
+            axios.post('/transcribe', { filename })
+                .then(response => {
+                    transcriptionElement.classList.remove('-hidden');
+                    const transcriptionText = response.data.transcription.text;
+                    if (transcriptionText) {
+                        transcriptionElement.textContent = `“${transcriptionText.trim()}”`;
+                    } else {
+                        transcriptionElement.textContent = 'No transcription available';
+                    }
+                    spinnerElement.style.display = 'none'; // Hide spinner
+                    overlayElement.style.display = 'none'; // Hide overlay
+                })
+                .catch(error => {
+                    transcriptionElement.classList.remove('-hidden');
+                    console.log(error);
+                    transcriptionElement.textContent = 'Error: ' + error.message;
+                    spinnerElement.style.display = 'none'; // Hide spinner
+                    overlayElement.style.display = 'none'; // Hide overlay
+                });
+        }
+    </script>
+</body>
+</html>

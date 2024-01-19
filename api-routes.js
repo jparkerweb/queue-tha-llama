@@ -3,6 +3,9 @@
 // ================
 // This file contains the API routes for the chatbot.
 
+import fs from 'fs';
+import axios from 'axios';
+import FormData from 'form-data';
 
 import { generateGUID } from './utils.js';
 import { embedText } from './embedding.js';
@@ -23,6 +26,8 @@ const INACTIVE_THRESHOLD = parseInt(process.env.INACTIVE_THRESHOLD) || 1000 * 10
 const ACTIVE_CLIENTS = new Map();                                                   // store active clients by requestId
 const ACTIVE_COLLECTIONS = new Map();                                               // store active collections by collectionName
 const responseStreams = new Map();                                                  // Store response streams by requestId
+const WHISPER_SERVER_URL = process.env.WHISPER_SERVER_URL || 'http://127.0.0.1:8087'; // URL of the Whisper.cpp server
+
 
 export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
     setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP);
@@ -283,4 +288,47 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
         // console.log(`Heartbeat received for ${requestId}`);
         res.status(200).send(`Heartbeat received for ${requestId}`);
     });
+
+
+    // ----------------------------------
+    // -- Endpoint to transcribe audio --
+    // ----------------------------------
+    app.post('/transcribe', async (req, res) => {
+        const filename = req.body.filename; // or req.params.filename
+        const filePath = 'media/' + filename;
+    
+        // Read the audio file
+        const fileStream = fs.createReadStream(filePath);
+    
+        // Prepare the form data
+        const form = new FormData();
+        form.append('file', fileStream);
+    
+        try {
+            // Send the request to Whisper.cpp server
+            const response = await axios.post(`${WHISPER_SERVER_URL}/inference`, form, {
+                headers: form.getHeaders(),
+            });
+    
+            // Send back the transcription
+            res.json({ transcription: response.data });
+        } catch (error) {
+            console.error('Error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+
+    // endpont to list audio files used for testing transcriptions
+    app.get('/list-audio-files', (req, res) => {
+        const mediaPath = './media/';
+        fs.readdir(mediaPath, (err, files) => {
+            if (err) {
+                console.error('Error reading media directory:', err);
+                res.status(500).send('Error reading media directory');
+                return;
+            }
+            res.json({ files });
+        });
+    });    
 }
