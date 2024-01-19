@@ -112,7 +112,7 @@ a:hover {
 
 .emoji-tilt {
     display: inline-block;
-    animation: tilt 2.75s ease-in-out infinite;
+    animation: tilt 2.75s linear infinite;
 }
 
 @keyframes tilt {
@@ -120,10 +120,13 @@ a:hover {
         transform: rotate(0);
     }
     25% {
-        transform: rotate(25deg); /* tilt in one direction */
+        transform: rotate(25deg);
+    }
+    50% {
+        transform: rotate(0);
     }
     75% {
-        transform: rotate(-25deg); /* tilt in the opposite direction */
+        transform: rotate(-25deg);
     }
 }
 
