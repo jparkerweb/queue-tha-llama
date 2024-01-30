@@ -3,8 +3,9 @@
 // ============================= 
 // This file contains the server code for the chatbot. It uses Express to handle
 // HTTP requests and Bull to handle the queue. It also uses Bull Board to provide
-// a dashboard for the queue. The chatbot uses the llama function from completion.js
-// to generate text based on the prompt provided by the client.
+// a dashboard for the queue. The chatbot uses the llama function from llm-api-connector.js
+// to generate text based on the prompt provided by the client. See api-routes.js
+// for all available endpoints and their functionality.
 
 
 import dotenv from 'dotenv';
@@ -24,6 +25,10 @@ const PORT = process.env.PORT || 3001; // Port for the Express Server to listen 
 const LLM_SERVER_URL = process.env.LLM_SERVER_URL || 'http://localhost:8080';
 const INDEX_HTML_FILE = process.env.INDEX_HTML_FILE || 'index.html';
 const RUN_STARTUP_EMBEDDING_TEST = toBoolean(process.env.RUN_STARTUP_EMBEDDING_TEST) || false;
+const MIN_CHUNK_TOKEN_SIZE = parseInt(process.env.MIN_CHUNK_TOKEN_SIZE, 10) || 150;
+const MAX_CHUNK_TOKEN_SIZE = parseInt(process.env.MAX_CHUNK_TOKEN_SIZE, 10) || 150;
+const MIN_CHUNK_TOKEN_OVERLAP = process.env.MIN_CHUNK_TOKEN_OVERLAP !== undefined ? parseInt(process.env.MIN_CHUNK_TOKEN_OVERLAP, 10) : 10;
+const MAX_CHUNK_TOKEN_OVERLAP = process.env.MAX_CHUNK_TOKEN_OVERLAP !== undefined ? parseInt(process.env.MAX_CHUNK_TOKEN_OVERLAP, 10) : 10;
 
 
 console.log('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'); // Clears the console
@@ -37,9 +42,17 @@ await chromaHeartbeat();
 if (RUN_STARTUP_EMBEDDING_TEST) { await embeddingTest(); }
 
 
-// calculate chunk token size and overlap
-const CHUNK_TOKEN_SIZE = Math.floor(n_ctx / 10);
-const CHUNK_TOKEN_OVERLAP = Math.max(Math.floor(CHUNK_TOKEN_SIZE / 10), 50);
+// Calculate chunk token size within the specified range
+let CHUNK_TOKEN_SIZE = Math.floor(n_ctx / 10);
+CHUNK_TOKEN_SIZE = Math.max(MIN_CHUNK_TOKEN_SIZE, CHUNK_TOKEN_SIZE);
+CHUNK_TOKEN_SIZE = Math.min(MAX_CHUNK_TOKEN_SIZE, CHUNK_TOKEN_SIZE);
+console.log(`(ツ) → CHUNK_TOKEN_SIZE value: ${CHUNK_TOKEN_SIZE}`);
+
+// Calculate chunk token overlap based on CHUNK_TOKEN_SIZE and within the specified range
+let CHUNK_TOKEN_OVERLAP = Math.floor(CHUNK_TOKEN_SIZE / 10);
+CHUNK_TOKEN_OVERLAP = Math.max(MIN_CHUNK_TOKEN_OVERLAP, CHUNK_TOKEN_OVERLAP);
+CHUNK_TOKEN_OVERLAP = Math.min(MAX_CHUNK_TOKEN_OVERLAP, CHUNK_TOKEN_OVERLAP);
+console.log(`(ツ) → CHUNK_TOKEN_OVERLAP value: ${CHUNK_TOKEN_OVERLAP}`);
 
 
 // ----------------
