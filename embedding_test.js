@@ -14,7 +14,11 @@ export async function embeddingTest() {
 
     const text = [
         ['🐕','EN','The quick brown fox jumped over the lazy dog.'],
-        ['🐕','EN','A procrastinating dog'],
+        ['🐕','ZH','敏捷的棕色狐狸跳过了那只懒狗。'],
+        ['🐕','ES','El veloz zorro marrón saltó sobre el perro perezoso.'],
+        ['🐕','JP','機敏な茶色のキツネは怠惰な犬を飛び越えました。'],
+        ['🐕','DE','De snelle bruine vos sprong over de luie hond heen.'],
+        ['🐕','EN','A procrastinating canine'],
         ['🐄','EN','The quick brown fox jumped over the lazy cow.'],
         ['🐄','DE','Der schnelle Braunfuchs sprang über die faule Kuh.'],
         ['🐄','FR','Le rapide renard brun sauta par-dessus la vache paresseuse.'],
@@ -31,7 +35,7 @@ export async function embeddingTest() {
 
     // for each string in array embed the text
     for (const t of text) {
-        const embeddingResults = await embedText(t[2]);
+        const embeddingResults = await embedText(t[2], 512, 0);
 
         // Add the embedding to the collection
         for (const embeddingResult of embeddingResults) {
