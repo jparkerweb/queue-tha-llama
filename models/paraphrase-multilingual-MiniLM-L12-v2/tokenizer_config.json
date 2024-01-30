@@ -1,1 +1,22 @@
-{"do_lower_case": true, "unk_token": "<unk>", "sep_token": "</s>", "pad_token": "<pad>", "cls_token": "<s>", "mask_token": {"content": "<mask>", "single_word": false, "lstrip": true, "rstrip": false, "normalized": true, "__type": "AddedToken"}, "tokenize_chinese_chars": true, "strip_accents": null, "bos_token": "<s>", "eos_token": "</s>", "model_max_length": 512, "special_tokens_map_file": null, "name_or_path": "old_models/paraphrase-multilingual-MiniLM-L12-v2/0_Transformer"}
+{
+  "bos_token": "<s>",
+  "clean_up_tokenization_spaces": true,
+  "cls_token": "<s>",
+  "do_lower_case": true,
+  "eos_token": "</s>",
+  "mask_token": {
+    "__type": "AddedToken",
+    "content": "<mask>",
+    "lstrip": true,
+    "normalized": true,
+    "rstrip": false,
+    "single_word": false
+  },
+  "model_max_length": 512,
+  "pad_token": "<pad>",
+  "sep_token": "</s>",
+  "strip_accents": null,
+  "tokenize_chinese_chars": true,
+  "tokenizer_class": "BertTokenizer",
+  "unk_token": "<unk>"
+}

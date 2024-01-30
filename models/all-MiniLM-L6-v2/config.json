@@ -18,7 +18,7 @@
   "num_hidden_layers": 6,
   "pad_token_id": 0,
   "position_embedding_type": "absolute",
-  "transformers_version": "4.33.2",
+  "transformers_version": "4.29.2",
   "type_vocab_size": 2,
   "use_cache": true,
   "vocab_size": 30522
