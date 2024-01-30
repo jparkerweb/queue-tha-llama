@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transcription Service</title>
+    <title>Queue tha Llama - Audio Transcriber</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
         html, body {
@@ -173,7 +173,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Fetch the list of audio files from the server
+            // ---------------------------------------------------
+            // -- Fetch the list of audio files from the server --
+            // ---------------------------------------------------
             fetch('/list-audio-files')
                 .then(response => response.json())
                 .then(data => {
@@ -200,7 +202,9 @@
         });
 
 
-        // Send the filename to the server for transcription
+        // -------------------------------------------------------
+        // -- Send the filename to the server for transcription --
+        // -------------------------------------------------------
         function transcribe(filename) {
             const transcriptionElement = document.getElementById('transcription');
             const overlayElement = document.getElementById('overlay');

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Queue tha Llama - Chat</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=1">
+    <link rel="stylesheet" href="chat.css">
+</head>
+<body class="diagonal-stripes">
+    <div class="title">
+        <a class="title__link" href="https://github.com/smarsh/queue-tha-llama" target="_blank">Queue tha Llama</a>
+    </div>
+    <div id="chat-container">
+        <div id="messages"></div>
+        <div id="chatForm">
+            <div>
+                <textarea id="input-box" placeholder="Type your message"></textarea>
+            </div>
+            <div class="buttons">
+                <button class="button-gradient button-gradient--green" id="sendButton">Send</button>
+                <button class="button-gradient button-gradient--orange" id="stopButton">Stop</button>
+                <button class="button-gradient button-gradient--blue" id="randomQuestionButton">Randomize</button>
+                <div class="switch-container">
+                    <label class="switch">
+                        <input type="checkbox" id="autoSendSwitch">
+                        <span class="slider round"></span>
+                    </label>
+                    <span>⚡ Auto Send</span>
+                </div>
+            </div>
+            <footer id="countdownFooter"></footer>
+        </div>
+    </div>
+    <div class="links">
+        <a id="chatLink" href="" target="_blank">🦙 New Queue tha Llama Chat Window</a>
+        <span>|</span>
+        <a id="redisDashboardLink" href="" target="_blank">🔬 Redis Queue Dashboard</a>
+        <span>|</span>
+        <a id="chromaDashboardLink" href="" target="_blank">📘 Chroma Collections Dashboard</a>
+    </div>
+    <div id="heartbeat-indicator" style="display:none;">❤️</div>
+    <div id="collection"></div>
+    <script src="chat.js"></script>
+</body>
+</html>
