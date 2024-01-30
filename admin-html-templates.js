@@ -351,25 +351,34 @@ export async function htmlListCollection(collectionName, collectionListTableRows
             }
             th, td {
                 padding: 12px 15px;
-            }    
+            }
             th {
                 position: sticky;
                 top: 0;
                 background-color: #444c61;
                 color: white;
                 font-size: 16px;
-            }    
+            }
             td {
                 border-bottom: 1px solid #dddddd;
                 color: #333;
-            }    
+                vertical-align: top;
+                text-wrap: nowrap;
+            }
+            td:nth-of-type(1) {
+                text-wrap: wrap;
+            }
+            td:nth-of-type(3) {
+                word-break: break-word;
+                text-wrap: wrap;
+            }
             tr:nth-child(even) {
                 background-color: #f2f2f2;
-            }    
+            }
             tr:hover {
                 background-color: #455dec40;
                 cursor: crosshair;
-            }    
+            }
             @media screen and (max-width: 600px) {
                 table {
                     width: 100%;
