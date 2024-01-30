@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const LLM_SERVER_TEMPERATURE = parseFloat(process.env.LLM_SERVER_TEMPERATURE) || 0.1
+const LLM_SERVER_GRAMMARS = parseFloat(process.env.LLM_SERVER_GRAMMARS) || ""
 const LLM_SERVER_STOP_TOKENS = JSON.parse(process.env.LLM_SERVER_STOP_TOKENS) || ["</s>", "LLM:", "USER:"]
 
 // default parameters for llama.cpp
@@ -15,6 +16,7 @@ const paramDefaults = {
   stream: true,
   n_predict: 500,
   temperature: LLM_SERVER_TEMPERATURE,
+  grammar: LLM_SERVER_GRAMMARS,
   stop: LLM_SERVER_STOP_TOKENS,
 };
 
