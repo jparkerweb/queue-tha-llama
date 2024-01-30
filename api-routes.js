@@ -7,7 +7,7 @@ import fs from 'fs';
 import axios from 'axios';
 import FormData from 'form-data';
 
-import { generateGUID } from './utils.js';
+import { generateGUID, toBoolean } from './utils.js';
 import { embedText } from './embedding.js';
 import { setupLlamaQueue, setupQueueHandler } from './queue-handler.js';
 import {
@@ -21,11 +21,12 @@ import {
 
 
 // TODO: dynamically set MAX_RAG_RESULTS based on prompt length and LLM token limit (will need to factor in hidden prompts as well)
-const MAX_RAG_RESULTS = parseInt(process.env.MAX_RAG_RESULTS) || 10;                // maximum number of RAG results to return
-const INACTIVE_THRESHOLD = parseInt(process.env.INACTIVE_THRESHOLD) || 1000 * 10;   // threshold used to determine if a client is inactive
-const ACTIVE_CLIENTS = new Map();                                                   // store active clients by requestId
-const ACTIVE_COLLECTIONS = new Map();                                               // store active collections by collectionName
-const responseStreams = new Map();                                                  // Store response streams by requestId
+const MAX_RAG_RESULTS = parseInt(process.env.MAX_RAG_RESULTS) || 10;                 // maximum number of RAG results to return
+const INACTIVE_THRESHOLD = parseInt(process.env.INACTIVE_THRESHOLD) || 1000 * 10;    // threshold used to determine if a client is inactive
+const ACTIVE_CLIENTS = new Map();                                                    // store active clients by requestId
+const ACTIVE_COLLECTIONS = new Map();                                                // store active collections by collectionName
+const responseStreams = new Map();                                                   // Store response streams by requestId
+const WHISPER_ENABLED = toBoolean(process.env.WHISPER_ENABLED) || false;             // Whether to enable audio transcriptions via Whisper.cpp server (requires the server to be running)
 const WHISPER_SERVER_URL = process.env.WHISPER_SERVER_URL || 'http://127.0.0.1:8087'; // URL of the Whisper.cpp server
 
 
@@ -39,6 +40,14 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
     // This endpoint is used by the client to determine how often to send heartbeats
     app.get('/heartbeat-interval', (req, res) => {
         res.json({ heartbeatInterval: INACTIVE_THRESHOLD / 2 });
+    });
+
+    // ---------------------------------------------
+    // -- endpoint to check if whisper is enabled --
+    // ---------------------------------------------
+    // This endpoint is used by the client to determine if whisper is enabled
+    app.get('/whisper-enabled', (req, res) => {
+        res.json({ whisperEnabled: WHISPER_ENABLED });
     });
 
 
@@ -178,7 +187,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
             const promptGUID = generateGUID();
             // setup prompt instructions and add any passed context
             const promptInstructions = process.env.LLM_PROMPT_INSTRUCTIONS + MESSAGE_CONTEXT;
-            const prefixPrompt = process.env.LLM_PREFIX_PROMPT;
+            const prefixUserPrompt = process.env.LLM_PREFIX_USER_PROMPT;
             
             // embed the prompt
             const textChunksAndEmbeddings = await embedText(prompt, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.error);
@@ -216,7 +225,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
             }
 
             // finalize fullPrompt
-            fullPrompt = `${promptInstructions}${previousPrompts}${prmoptSeperator}${prefixPrompt}USER: ${originalPrompt}\nLLM:`;
+            fullPrompt = `${promptInstructions}${previousPrompts}${prmoptSeperator}${prefixUserPrompt}USER: ${originalPrompt}\nLLM:`;
 
             // add job to queue
             const job = await llamaQueue.add('chat', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
