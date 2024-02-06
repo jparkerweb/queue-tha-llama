@@ -13,12 +13,14 @@ export function generateGUID() {
     });
 }
 
+
 // --------------------
 // -- delay function --
 // --------------------
 export function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
 
 // -------------------------------------
 // -- return passed string as boolean --
@@ -35,4 +37,25 @@ export function toBoolean(str = 'false') {
     }
 
     return false;
+}
+
+
+// ---------------------------------------------
+// -- sort context query results by dateAdded --
+// ---------------------------------------------
+export async function sortResultsByDateAdded(queryResults) {
+    if (queryResults && queryResults.ids[0].length > 0) {
+        let ids = queryResults.ids[0];
+        let metadatas = queryResults.metadatas[0];
+        let documents = queryResults.documents[0];
+        let sortedqueryResults = [];
+        for (let i = 0; i < ids.length; i++) {
+            sortedqueryResults.push({ id: ids[i], metadata: metadatas[i], document: documents[i] });
+        }
+        sortedqueryResults.sort((a, b) => (a.metadata.dateAdded > b.metadata.dateAdded) ? 1 : -1);
+        queryResults.ids[0] = sortedqueryResults.map(result => result.id);
+        queryResults.metadatas[0] = sortedqueryResults.map(result => result.metadata);
+        queryResults.documents[0] = sortedqueryResults.map(result => result.document);
+    }
+    return queryResults;
 }

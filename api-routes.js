@@ -7,7 +7,7 @@ import fs from 'fs';
 import axios from 'axios';
 import FormData from 'form-data';
 
-import { generateGUID, toBoolean } from './utils.js';
+import { generateGUID, toBoolean, sortResultsByDateAdded } from './utils.js';
 import { embedText } from './embedding.js';
 import { setupLlamaQueue, setupQueueHandler } from './queue-handler.js';
 import {
@@ -205,19 +205,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
             const contextQueryResults = await queryCollectionEmbeddings(collectionName, originalPromptEmbedding, MAX_RAG_RESULTS);
             
             // sort contextQueryResults by metadata.dateAdded
-            if (contextQueryResults && contextQueryResults.ids[0].length > 0) {
-                let ids = contextQueryResults.ids[0];
-                let metadatas = contextQueryResults.metadatas[0];
-                let documents = contextQueryResults.documents[0];
-                let sortedContextQueryResults = [];
-                for (let i = 0; i < ids.length; i++) {
-                    sortedContextQueryResults.push({ id: ids[i], metadata: metadatas[i], document: documents[i] });
-                }
-                sortedContextQueryResults.sort((a, b) => (a.metadata.dateAdded > b.metadata.dateAdded) ? 1 : -1);
-                contextQueryResults.ids[0] = sortedContextQueryResults.map(result => result.id);
-                contextQueryResults.metadatas[0] = sortedContextQueryResults.map(result => result.metadata);
-                contextQueryResults.documents[0] = sortedContextQueryResults.map(result => result.document);
-            }
+                contextQueryResults = await sortResultsByDateAdded(contextQueryResults);
 
             // add contextQueryResults to previousPrompts
             if (contextQueryResults && contextQueryResults.ids[0].length > 0) {
