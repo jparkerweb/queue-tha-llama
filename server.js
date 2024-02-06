@@ -35,10 +35,10 @@ const MAX_CHUNK_TOKEN_OVERLAP = process.env.MAX_CHUNK_TOKEN_OVERLAP !== undefine
 
 
 console.log('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'); // Clears the console
-// (ツ) → Check if LLM server is running and store n_ctx value from the LLM model.json endpoint
+// (ツ) → Check if LLM server is running and store n_ctx value from the LLM /props endpoint
 const n_ctx = await fetchNCtxValue();
-// (ツ) → Calculate num_slots from /props LLM server endpoint
-const num_slots = await fetchLLMNumSlots();
+// (ツ) → Calculate total_slots from /props LLM server endpoint
+const total_slots = await fetchLLMTotalSlots();
 // (ツ) → Check if Redis server is running
 await redisHeartbeat();
 // (ツ) → Check if Chroma server is running
@@ -78,23 +78,23 @@ app.use(express.static(path.join(__dirname, 'public'), { index: INDEX_HTML_FILE 
 // -- Set up API routes --
 // -----------------------
 // This function sets up the API routes for the server
-setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_slots);
+setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots);
 
 
 // --------------------------------------------------------------------
-// -- Function to fetch n_ctx value from the LLM model.json endpoint --
+// -- Function to fetch n_ctx value from the LLM /props endpoint --
 // --------------------------------------------------------------------
 async function fetchNCtxValue() {
     try {
-        const response = await fetch(`${LLM_SERVER_URL}/model.json`);
+        const response = await fetch(`${LLM_SERVER_URL}/props`);
         if (!response.ok) {
-            console.error(`X → LLM Server Offline\nError fetching model.json: ${response.statusText}`);
+            console.error(`X → LLM Server Offline\nError fetching /props: ${response.statusText}`);
             process.exit(1); // Exit the process with an error code
         } else {
             console.log('(ツ) → LLM Server Online');
         }
         const data = await response.json();
-        return data.n_ctx;
+        return data.default_generation_settings.n_ctx;
     } catch (error) {
         console.error('X → LLM Server Offline\nError fetching n_ctx value:', error);
         process.exit(1); // Exit the process with an error code
@@ -103,9 +103,9 @@ async function fetchNCtxValue() {
 
 
 // ----------------------------------------------------------------------
-// -- Function to fetch num_slots value from the LLM "/props" endpoint --
+// -- Function to fetch total_slots value from the LLM "/props" endpoint --
 // ----------------------------------------------------------------------
-async function fetchLLMNumSlots() {
+async function fetchLLMTotalSlots() {
     try {
         const response = await fetch(`${LLM_SERVER_URL}/props`);
         if (!response.ok) {
@@ -115,14 +115,14 @@ async function fetchLLMNumSlots() {
             return MAX_CONCURRENT_REQUESTS_FALLBACK
         }
         const data = await response.json();
-        let num_slots = MAX_CONCURRENT_REQUESTS_FALLBACK || 1;
+        let total_slots = MAX_CONCURRENT_REQUESTS_FALLBACK || 1;
         
-        if (data.default_generation_settings.num_slots) num_slots = data.default_generation_settings.num_slots;
-        console.log(`(ツ) → LLM Server "num_slots": ${num_slots}`);
+        if (data.total_slots) total_slots = data.total_slots;
+        console.log(`(ツ) → LLM Server "total_slots": ${total_slots}`);
 
-        return num_slots;
+        return total_slots;
     } catch (error) {
-        console.error('X → Problem fetching "num_slots" from "/props" endpoint for LLM Server', error);
+        console.error('X → Problem fetching "total_slots" from "/props" endpoint for LLM Server', error);
         console.log(`    using fallback value MAX_CONCURRENT_REQUESTS_FALLBACK: ${MAX_CONCURRENT_REQUESTS_FALLBACK}`)
         
         return MAX_CONCURRENT_REQUESTS_FALLBACK

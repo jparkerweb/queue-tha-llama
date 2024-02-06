@@ -31,8 +31,8 @@ const WHISPER_ENABLED = toBoolean(process.env.WHISPER_ENABLED) || false;        
 const WHISPER_SERVER_URL = process.env.WHISPER_SERVER_URL || 'http://127.0.0.1:8087'; // URL of the Whisper.cpp server
 
 
-export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_slots) {
-    setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_slots);
+export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots) {
+    setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots);
     const llamaQueue = setupLlamaQueue();
 
     // ----------------------------------------
@@ -67,7 +67,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
             const html = await htmlDeleteCollections();
             res.send(html);
         } catch (error) {
-            console.error('Error:', error);
+            console.log('Error:', error);
             res.status(500).send('Error deleting collections');
         }
     });
@@ -84,7 +84,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
             const html = await htmlDeleteCollection(collectionName);
             res.send(html);
         } catch (error) {
-            console.error('Error:', error);
+            console.log('Error:', error);
             res.status(500).send('Error deleting collection');
         }
     });
@@ -101,7 +101,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
 
             res.send(html);
         } catch (error) {
-            console.error('Error:', error);
+            console.log('Error:', error);
             res.status(500).send('Error fetching collections');
         }
     });
@@ -150,7 +150,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
 
             res.send(html);
         } catch (error) {
-            console.error('Error:', error);
+            console.log('Error:', error);
             res.status(500).send('Error fetching collection');
         }
     });
@@ -165,7 +165,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
         try{
             createCollection(collectionName);
         } catch (error) {
-            console.error('Error creating collection:', error);
+            console.log('Error creating collection:', error);
         }
         // Initialize the entry for this client in Active Collections
         ACTIVE_COLLECTIONS.set(collectionName);
@@ -193,7 +193,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
             const prefixUserPrompt = process.env.LLM_PREFIX_USER_PROMPT;
             
             // embed the prompt
-            const textChunksAndEmbeddings = await embedText(prompt, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.error);
+            const textChunksAndEmbeddings = await embedText(prompt, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.log);
 
             // setup variables for building prompts
             let fullPrompt = prompt;
@@ -201,63 +201,64 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
             let originalPrompt = prompt;
             let originalPromptEmbedding = textChunksAndEmbeddings[0].embedding;
             let prmoptSeperator = "\n\n";
-       
+
             // look for a semantic route match
             const semanticRoute = await matchSemanticRoute(originalPromptEmbedding, res);
 
             // if a semantic route wasn't matched follow the normal process
             if (!semanticRoute.matched) {
-            // query for similar text to send with the prompt
+                // query for similar text to send with the prompt
                 let contextQueryResults = await queryCollectionEmbeddings(collectionName, originalPromptEmbedding, MAX_RAG_RESULTS);
-            
-            // sort contextQueryResults by metadata.dateAdded
+                
+                // sort contextQueryResults by metadata.dateAdded
                 contextQueryResults = await sortResultsByDateAdded(contextQueryResults);
-
-            // add contextQueryResults to previousPrompts
-            if (contextQueryResults && contextQueryResults.ids[0].length > 0) {
-                for (let i = 0; i < contextQueryResults.ids[0].length; i++) {
-                    previousPrompts += `${prmoptSeperator}${contextQueryResults.metadatas[0][i].source}: ${contextQueryResults.documents[0][i]}`;
+    
+                // add contextQueryResults to previousPrompts
+                if (contextQueryResults && contextQueryResults.ids[0].length > 0) {
+                    for (let i = 0; i < contextQueryResults.ids[0].length; i++) {
+                        previousPrompts += `${prmoptSeperator}${contextQueryResults.metadatas[0][i].source}: ${contextQueryResults.documents[0][i]}`;
+                    }
+                }
+    
+                // finalize fullPrompt
+                fullPrompt = `${promptInstructions}${previousPrompts}${prmoptSeperator}${prefixUserPrompt}USER: ${originalPrompt}\nLLM:`;
+    
+                // add job to queue
+                const job = await llamaQueue.add('chat', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
+                console.log('Added job with ID:', job.id); // Log the job ID
+                console.log('shortPrompt:', fullPrompt.slice(-70)); // Log the Prompt
+    
+                let success = true;
+                for (const textChunksAndEmbedding of textChunksAndEmbeddings) {
+                    // add each chunk to the collection
+                    addToCollection(
+                        collectionName,
+                        promptGUID,
+                        textChunksAndEmbedding.embedding,
+                        { source: "USER", tokenCount: textChunksAndEmbedding.tokenCount, dateAdded: Date.now() },
+                        textChunksAndEmbedding.text,
+                    ).catch(error => {
+                        console.log('Error adding to collection:', error);
+                        success = false;
+                    });
+                }
+    
+                if (success) {
+                    console.log(`Added ${textChunksAndEmbeddings.length} chunks to collection: ${collectionName}`);
+                    
+                    // Initialize the entry for this client in ACTIVE_CLIENTS
+                    ACTIVE_CLIENTS.set(requestId, null);
+    
+                    // Store the response stream to be used when the job is processed
+                    responseStreams.set(requestId, res);
+                    res.writeHead(200, { 'Content-Type': 'text/plain' });
+                } else {
+                    console.log('Error adding job to queue because of addToCollection failures:', error);
+                    res.status(500).send('Error adding job to queue because of addToCollection failures');
                 }
             }
-
-            // finalize fullPrompt
-            fullPrompt = `${promptInstructions}${previousPrompts}${prmoptSeperator}${prefixUserPrompt}USER: ${originalPrompt}\nLLM:`;
-
-            // add job to queue
-            const job = await llamaQueue.add('chat', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
-            console.log('Added job with ID:', job.id); // Log the job ID
-            console.log('fullPrompt:', fullPrompt); // Log the fullPrompt
-
-            let success = true;
-            for (const textChunksAndEmbedding of textChunksAndEmbeddings) {
-                // add each chunk to the collection
-                addToCollection(
-                    collectionName,
-                    promptGUID,
-                    textChunksAndEmbedding.embedding,
-                    { source: "USER", tokenCount: textChunksAndEmbedding.tokenCount, dateAdded: Date.now() },
-                    textChunksAndEmbedding.text,
-                ).catch(error => {
-                    console.error('Error adding to collection:', error);
-                    success = false;
-                });
-            }
-
-            if (success) {
-                console.log(`Added ${textChunksAndEmbeddings.length} chunks to collection: ${collectionName}`);
-                
-                // Initialize the entry for this client in ACTIVE_CLIENTS
-                ACTIVE_CLIENTS.set(requestId, null);
-
-                // Store the response stream to be used when the job is processed
-                responseStreams.set(requestId, res);
-                res.writeHead(200, { 'Content-Type': 'text/plain' });
-            } else {
-                console.error('Error adding job to queue because of addToCollection failures:', error);
-                res.status(500).send('Error adding job to queue because of addToCollection failures');
-            }
         } catch (error) {
-            console.error('Error adding job to queue:', error);
+            console.log('Error adding job to queue:', error);
             res.status(500).send('Error adding job to queue');
         }
     });
@@ -318,7 +319,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
             // Send back the transcription
             res.json({ transcription: response.data });
         } catch (error) {
-            console.error('Error:', error);
+            console.log('Error:', error);
             res.status(500).json({ error: error.message });
         }
     });
@@ -329,7 +330,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
         const mediaPath = './media/';
         fs.readdir(mediaPath, (err, files) => {
             if (err) {
-                console.error('Error reading media directory:', err);
+                console.log('Error reading media directory:', err);
                 res.status(500).send('Error reading media directory');
                 return;
             }

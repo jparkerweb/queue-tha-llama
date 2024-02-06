@@ -65,7 +65,7 @@ export function setupLlamaQueue() {
 // --------------------------------------
 // This function sets up the queue handler routines
 // (dashboard, queue processing, and cleanup)
-export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_slots) {
+export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots) {
 
     // -----------------------
     // -- Set up Bull Board --
@@ -111,7 +111,7 @@ export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTI
             host: REDIS_HOST,
             port: REDIS_PORT
         },
-        concurrency: num_slots
+        concurrency: total_slots
     });
 
 
@@ -188,11 +188,10 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
         let collectionName = job.opts.collectionName;
         let fullResponse = ''; // Store the full response in memory for embedding
         
-        //TODO: add back short prompt
-        const shortPrompt = prompt;
-        // const shortPrompt = prompt.slice(0, 40); // short prompt for logging
+        // create a short prompt for logging
+        const shortPrompt = prompt.slice(-70);
 
-        console.log(`→ → → starting response to: ${shortPrompt}...`);
+        console.log(`→ → → starting response to: ...${shortPrompt}`);
 
         // Stream the data to the response
         for await (const chunk of llama(prompt)) {
@@ -217,7 +216,7 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
         }
 
         ACTIVE_CLIENTS.delete(job.id); // Remove the client from the active list
-        console.log(`← ← ← ended response to: ${shortPrompt}...`);
+        console.log(`← ← ← ended response to: ...${shortPrompt}`);
     } catch (error) {
         if (error.message.includes('slot unavailable')) {
             await handleSlotUnavailableError(job); // Use job here
