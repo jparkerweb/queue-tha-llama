@@ -1,0 +1,14 @@
+[
+    {
+        "topic": "politics",
+        "function": "reply(`I'm sorry, I cannot help you with that`)",
+        "phrases": [
+            "isn't politics the best thing ever",
+            "why don't you tell me about your political opinions",
+            "don't you just love the president",
+            "don't you just hate the president",
+            "they're going to destory this country!",
+            "they will save the country"
+        ]
+    }
+]
