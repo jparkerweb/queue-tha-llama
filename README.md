@@ -64,6 +64,9 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
     .\server.exe -m .\models\7b\mistral-7b-instruct-v0.2.Q4_K_M.gguf -c 2048 -cb -np 2
     ```
 
+- ### (OPTIONAL) Download and Run an Automatic Speech Recognition model via Whisper.cpp
+  - [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+
 ---
 
 ## Run
