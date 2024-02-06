@@ -22,7 +22,6 @@ dotenv.config();
 
 const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
-const MAX_CONCURRENT_REQUESTS = parseInt(process.env.MAX_CONCURRENT_REQUESTS) || 2;
 const COMPLETED_JOB_CLEANUP_DELAY = parseInt(process.env.COMPLETED_JOB_CLEANUP_DELAY) || 1000 * 60 * 5;
 
 
@@ -66,7 +65,7 @@ export function setupLlamaQueue() {
 // --------------------------------------
 // This function sets up the queue handler routines
 // (dashboard, queue processing, and cleanup)
-export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
+export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_slots) {
 
     // -----------------------
     // -- Set up Bull Board --
@@ -112,7 +111,7 @@ export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTI
             host: REDIS_HOST,
             port: REDIS_PORT
         },
-        concurrency: MAX_CONCURRENT_REQUESTS
+        concurrency: num_slots
     });
 
 

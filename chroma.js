@@ -75,8 +75,8 @@ export async function addToCollection(
 	const collection = await chromaClient.getOrCreateCollection({
 		name: collectionName,
 	}).catch((error) => {
-		console.error("Error getting collection: ", error);
-		retrun;
+		console.log("Error getting collection: ", error);
+		return;
 	});
 
 	console.log(`→ → embeddings length: ${embeddings.length}`);
@@ -90,7 +90,7 @@ export async function addToCollection(
 		console.log("✔ Added to collection");
 		// console.log(`embeddings: ${embeddings}`);
 	}).catch((error) => {
-		console.error("Error adding to collection: ", error);
+		console.log("Error adding to collection: ", error);
 	});
 }
 

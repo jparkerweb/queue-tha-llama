@@ -30,8 +30,8 @@ const WHISPER_ENABLED = toBoolean(process.env.WHISPER_ENABLED) || false;        
 const WHISPER_SERVER_URL = process.env.WHISPER_SERVER_URL || 'http://127.0.0.1:8087'; // URL of the Whisper.cpp server
 
 
-export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
-    setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP);
+export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_slots) {
+    setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_slots);
     const llamaQueue = setupLlamaQueue();
 
     // ----------------------------------------
@@ -58,7 +58,9 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
         try {
             const collections = await listCollections();
             for (let collection of collections) {
-                await deleteCollection(collection.name);
+                if (collection.name !== 'test-collection' && collection.name !== 'semantic-routes') {
+                    await deleteCollection(collection.name);
+                }
             }
 
             const html = await htmlDeleteCollections();

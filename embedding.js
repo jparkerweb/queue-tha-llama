@@ -6,10 +6,12 @@
 
 
 import { env, pipeline, AutoTokenizer } from '@xenova/transformers';
+import { toBoolean } from './utils.js';
 
 env.localModelPath = 'models/';
 env.allowRemoteModels = false;
 const ONNX_EMBEDDING_MODEL = process.env.ONNX_EMBEDDING_MODEL || 'all-MiniLM-L6-v2';
+const ONNX_EMBEDDING_MODEL_QUANTIZED = toBoolean(process.env.ONNX_EMBEDDING_MODEL_QUANTIZED) || false;
 
 // ---------------------------------------------
 // -- Function to create embeddings from text --
@@ -105,7 +107,7 @@ async function chunkText(text, maxTokens = 150, overlap = 10) {
 // -- Create the embedding pipeline --
 // -----------------------------------
 const generateEmbedding = await pipeline('feature-extraction', ONNX_EMBEDDING_MODEL, {
-    quantized: false,
+    quantized: ONNX_EMBEDDING_MODEL_QUANTIZED,
 });
 
 

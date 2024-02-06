@@ -25,6 +25,7 @@ const PORT = process.env.PORT || 3001; // Port for the Express Server to listen 
 const LLM_SERVER_URL = process.env.LLM_SERVER_URL || 'http://localhost:8080';
 const INDEX_HTML_FILE = process.env.INDEX_HTML_FILE || 'index.html';
 const RUN_STARTUP_EMBEDDING_TEST = toBoolean(process.env.RUN_STARTUP_EMBEDDING_TEST) || false;
+const MAX_CONCURRENT_REQUESTS_FALLBACK = parseInt(process.env.MAX_CONCURRENT_REQUESTS_FALLBACK, 10) || 1;
 const MIN_CHUNK_TOKEN_SIZE = parseInt(process.env.MIN_CHUNK_TOKEN_SIZE, 10) || 150;
 const MAX_CHUNK_TOKEN_SIZE = parseInt(process.env.MAX_CHUNK_TOKEN_SIZE, 10) || 150;
 const MIN_CHUNK_TOKEN_OVERLAP = process.env.MIN_CHUNK_TOKEN_OVERLAP !== undefined ? parseInt(process.env.MIN_CHUNK_TOKEN_OVERLAP, 10) : 10;
@@ -34,6 +35,8 @@ const MAX_CHUNK_TOKEN_OVERLAP = process.env.MAX_CHUNK_TOKEN_OVERLAP !== undefine
 console.log('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'); // Clears the console
 // (ツ) → Check if LLM server is running and store n_ctx value from the LLM model.json endpoint
 const n_ctx = await fetchNCtxValue();
+// (ツ) → Calculate num_slots from /props LLM server endpoint
+const num_slots = await fetchLLMNumSlots();
 // (ツ) → Check if Redis server is running
 await redisHeartbeat();
 // (ツ) → Check if Chroma server is running
@@ -71,7 +74,7 @@ app.use(express.static(path.join(__dirname, 'public'), { index: INDEX_HTML_FILE 
 // -- Set up API routes --
 // -----------------------
 // This function sets up the API routes for the server
-setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP);
+setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_slots);
 
 
 // --------------------------------------------------------------------
@@ -93,6 +96,35 @@ async function fetchNCtxValue() {
         process.exit(1); // Exit the process with an error code
     }
 }
+
+
+// ----------------------------------------------------------------------
+// -- Function to fetch num_slots value from the LLM "/props" endpoint --
+// ----------------------------------------------------------------------
+async function fetchLLMNumSlots() {
+    try {
+        const response = await fetch(`${LLM_SERVER_URL}/props`);
+        if (!response.ok) {
+            console.error('X → Problem fetching "/props" endpoint from LLM Server');
+            console.log(`    using fallback value MAX_CONCURRENT_REQUESTS_FALLBACK: ${MAX_CONCURRENT_REQUESTS_FALLBACK}`)
+            
+            return MAX_CONCURRENT_REQUESTS_FALLBACK
+        }
+        const data = await response.json();
+        let num_slots = MAX_CONCURRENT_REQUESTS_FALLBACK || 1;
+        
+        if (data.default_generation_settings.num_slots) num_slots = data.default_generation_settings.num_slots;
+        console.log(`(ツ) → LLM Server "num_slots": ${num_slots}`);
+
+        return num_slots;
+    } catch (error) {
+        console.error('X → Problem fetching "num_slots" from "/props" endpoint for LLM Server', error);
+        console.log(`    using fallback value MAX_CONCURRENT_REQUESTS_FALLBACK: ${MAX_CONCURRENT_REQUESTS_FALLBACK}`)
+        
+        return MAX_CONCURRENT_REQUESTS_FALLBACK
+    }
+}
+
 
 
 // ----------------------
