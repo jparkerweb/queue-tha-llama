@@ -62,6 +62,21 @@ export async function deleteCollection(collectionName) {
 
 
 // -----------------------
+// -- collection exists --
+// -----------------------
+export async function collectionExists(collectionName) {
+	const collection = await chromaClient.getCollection({
+		name: collectionName,
+	}).then((response) => {
+		return true;
+	}).catch((error) => {
+		return false;
+	});
+	return collection;
+}
+
+
+// -----------------------
 // -- add to collection --
 // -----------------------
 export async function addToCollection(

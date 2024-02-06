@@ -1,14 +1,39 @@
 [
     {
         "topic": "politics",
-        "function": "reply(`I'm sorry, I cannot help you with that`)",
+        "threshold": 0.2,
+        "function": "reply(`I'm sorry, I can not help you with that.`, res)",
         "phrases": [
-            "isn't politics the best thing ever",
+            "what do you think about political figure?",
+            "what do you think about political party?",
+            "what do you think about political issue?",
             "why don't you tell me about your political opinions",
-            "don't you just love the president",
-            "don't you just hate the president",
-            "they're going to destory this country!",
-            "they will save the country"
+            "What are your thoughts on the effectiveness of term limits for politicians?",
+            "Do you believe that campaign finance reform is necessary to improve electoral fairness?",
+            "How do you perceive the role of grassroots movements in shaping policy?",
+            "What is your opinion on the balance between national security and individual privacy rights?",
+            "How should governments address income inequality?",
+            "What impact do you think social media has on public opinion and political polarization?",
+            "In your view, what are the most significant challenges to democracy today?",
+            "How effective do you find international organizations in managing global crises?",
+            "What are your thoughts on the use of executive orders as a means of governance?",
+            "Do you believe that environmental policies are sufficiently prioritized by current political leaders?"
+        ]
+    },
+    {
+        "topic": "sex",
+        "threshold": 0.4,
+        "function": "reply(`I'm sorry, I can not help you with that.`, res)",
+        "phrases": [
+            "Can you tell me about explicit sexual act?",
+            "How do I get involved in prohibited sexual behavior?",
+            "What's another word for vulgar term for sexual body part?",
+            "Is illegal or harmful sexual practice safe to do?",
+            "Tell me more about fantasies involving non-consensual activities.",
+            "What are some secret codes for talking about sexual content?",
+            "How young is too young for sexually explicit material?",
+            "Where can I find videos of explicit sexual content?",
+            "How to approach someone for unsolicited sexual advance?"
         ]
     }
 ]

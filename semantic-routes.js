@@ -2,12 +2,16 @@ import { promises as fs } from 'fs';
 import dotenv from "dotenv";
 dotenv.config();
 
-import { generateGUID } from './utils.js';
+import { delay, generateGUID, toBoolean } from './utils.js';
 import { embedText } from './embedding.js';
-import { createCollection, addToCollection, deleteCollection } from './chroma.js';
+import {
+    createCollection, addToCollection,
+    collectionExists, deleteCollection,
+    queryCollectionEmbeddings
+} from './chroma.js';
 
-const SEMATIC_ROUTE_MIN_SCORE = parseFloat(process.env.SEMATIC_ROUTE_MIN_SCORE) || 0.3;
-console.log(`(ツ) → SEMATIC_ROUTE_MIN_SCORE value: ${SEMATIC_ROUTE_MIN_SCORE}`);
+const USE_SEMANTIC_ROUTES = toBoolean(process.env.USE_SEMANTIC_ROUTES) || false;
+const TOP_SEMANTIC_ROUTES = parseInt(process.env.TOP_SEMANTIC_ROUTES) || 10;
 
 // ----------------------------------------
 // -- load Semantic Route Data from JSON --
@@ -51,6 +55,7 @@ export async function createSemanticRoutes() {
                     embedding,
                     {
                         _topic: d.topic,
+                        _threshold: d.threshold,
                         _function: d.function,
                         source: "semantic-routes",
                         tokenCount: tokenCount,
@@ -63,5 +68,69 @@ export async function createSemanticRoutes() {
             }
         }
     }
+
     console.log('(ツ) → Semantic routes created');
+}
+
+
+// ---------------------------------------------
+// -- match Semantic Route in Vector Database --
+// ---------------------------------------------
+export async function matchSemanticRoute(promptEmbedding, res) {
+    let routeTopic = null;
+    let routeFunction = null;
+    let matched = false;
+
+    if (USE_SEMANTIC_ROUTES) {
+        const semanticRoutesExist = await collectionExists('semantic-routes');
+        if (!semanticRoutesExist) {
+            await createSemanticRoutes();
+        }
+
+        const results = await queryCollectionEmbeddings('semantic-routes', promptEmbedding, TOP_SEMANTIC_ROUTES);
+
+        if (results) {
+            // loop through results
+            for (let i = 0; i < results.ids[0].length; i++) {
+                console.log(`(ツ) → Semantic Route Eval: ${results.distances[0][i]} → ${results.metadatas[0][i]._topic} threshold: ${results.metadatas[0][0]._threshold}`)
+                if (results.distances[0][i] <= results.metadatas[0][i]._threshold) {
+                    matched = true;
+                    routeTopic = results.metadatas[0][i]._topic;
+                    routeFunction = results.metadatas[0][i]._function;
+                    eval(routeFunction);
+                    console.log(`(ツ) → Semantic Route Matched: ${routeTopic} → ${routeFunction}`);
+                    break;
+                }
+            }
+        }
+    }
+
+    return { matched: matched, topic: routeTopic, func: routeFunction };
+}
+
+
+
+// =============================
+// == dynamic route functions ==
+// =============================
+
+// -----------------------------------------------------------
+// -- function to reply to the client with pre-defined text --
+// -----------------------------------------------------------
+async function reply(text, res) {
+    // Split text into words, keeping punctuation attached to the preceding word
+    const words = text.match(/[\w'’"-]+|[.,!?;:]/g) || [text];
+
+    for (let i = 0; i < words.length; i++) {
+        await delay(200);
+        let word = words[i];
+        res.write(word);
+        
+        // Add a space after the word if the next word is not punctuation
+        if (i + 1 < words.length && !/^[.,!?;:]$/.test(words[i + 1])) {
+            res.write(" ");
+        }
+    }
+
+    res.end();
 }

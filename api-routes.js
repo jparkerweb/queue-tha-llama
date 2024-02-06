@@ -10,6 +10,7 @@ import FormData from 'form-data';
 import { generateGUID, toBoolean, sortResultsByDateAdded } from './utils.js';
 import { embedText } from './embedding.js';
 import { setupLlamaQueue, setupQueueHandler } from './queue-handler.js';
+import { matchSemanticRoute } from './semantic-routes.js';
 import {
     createCollection, deleteCollection, addToCollection, 
     listCollections, peekCollection, queryCollectionEmbeddings
@@ -201,8 +202,13 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, num_s
             let originalPromptEmbedding = textChunksAndEmbeddings[0].embedding;
             let prmoptSeperator = "\n\n";
        
+            // look for a semantic route match
+            const semanticRoute = await matchSemanticRoute(originalPromptEmbedding, res);
+
+            // if a semantic route wasn't matched follow the normal process
+            if (!semanticRoute.matched) {
             // query for similar text to send with the prompt
-            const contextQueryResults = await queryCollectionEmbeddings(collectionName, originalPromptEmbedding, MAX_RAG_RESULTS);
+                let contextQueryResults = await queryCollectionEmbeddings(collectionName, originalPromptEmbedding, MAX_RAG_RESULTS);
             
             // sort contextQueryResults by metadata.dateAdded
                 contextQueryResults = await sortResultsByDateAdded(contextQueryResults);
