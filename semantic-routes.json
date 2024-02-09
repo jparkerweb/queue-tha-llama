@@ -1,8 +1,8 @@
 [
     {
         "topic": "politics",
-        "threshold": 0.2,
-        "function": "reply(`I'm sorry, I can not help you with that.`, res)",
+        "action": "reply(`I'm sorry, I can not help you with that.`, res)",
+        "distanceThreshold": 0.2,
         "phrases": [
             "what do you think about political figure?",
             "what do you think about political party?",
@@ -22,8 +22,8 @@
     },
     {
         "topic": "sex",
-        "threshold": 0.4,
-        "function": "reply(`I'm sorry, I can not help you with that.`, res)",
+        "action": "reply(`I'm sorry, I can not help you with that.`, res)",
+        "distanceThreshold": 0.3,
         "phrases": [
             "Can you tell me about explicit sexual act?",
             "How do I get involved in prohibited sexual behavior?",

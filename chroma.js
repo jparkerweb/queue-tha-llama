@@ -2,18 +2,13 @@
 // == Description: ChromaDB client ==
 // ==================================
 
-// -------------------------------------------------
-// -- import environment variables from .env file --
-// -------------------------------------------------
+import { toBoolean } from './utils.js';
 import dotenv from "dotenv";
 dotenv.config();
 
-
-// ------------------------
-// -- load Chroma client --
-// ------------------------
 const CHROMA_SERVER_URL = process.env.CHROMA_SERVER_URL || "http://localhost:8001";
 const CHROMA_DISTANCE_FUNCTION = process.env.CHROMA_DISTANCE_FUNCTION || "cosine";
+const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
 
 import { ChromaClient } from "chromadb";
 const chromaClient = new ChromaClient({ path: CHROMA_SERVER_URL, });
@@ -39,7 +34,7 @@ export async function chromaHeartbeat() {
 // -- create collection --
 // -----------------------
 export async function createCollection(collectionName, description = "a collection of embeddings") {
-	console.log(`→ createCollection: ${collectionName}`);
+	if (VERBOSE_LOGGING) { console.log(`→ createCollection: ${collectionName}`); }
 	const collection = await chromaClient.getOrCreateCollection({
 		name: collectionName,
 		metadata: {
@@ -54,7 +49,7 @@ export async function createCollection(collectionName, description = "a collecti
 // -- delete collection --
 // -----------------------
 export async function deleteCollection(collectionName) {
-	console.log(`→ deleteCollection: ${collectionName}`);
+	if (VERBOSE_LOGGING) { console.log(`→ deleteCollection: ${collectionName}`); }
 	await chromaClient.deleteCollection({
 		name: collectionName,
 	});
@@ -86,7 +81,7 @@ export async function addToCollection(
 	metadatas,
 	documents
 ) {
-	console.log(`→ addToCollection: ${collectionName}`);
+	if (VERBOSE_LOGGING) { console.log(`→ addToCollection: ${collectionName}`); }
 	const collection = await chromaClient.getOrCreateCollection({
 		name: collectionName,
 	}).catch((error) => {
@@ -94,7 +89,7 @@ export async function addToCollection(
 		return;
 	});
 
-	console.log(`→ → embeddings length: ${embeddings.length}`);
+	if (VERBOSE_LOGGING) { console.log(`→ → embeddings length: ${embeddings.length}`); }
 
 	await collection.add({
 		ids: ids,
@@ -102,8 +97,8 @@ export async function addToCollection(
 		metadatas: metadatas,
 		documents: documents,
 	}).then((response) => {
-		console.log("✔ Added to collection");
-		// console.log(`embeddings: ${embeddings}`);
+		if (VERBOSE_LOGGING) { console.log("✔ Added to collection"); }
+		// if (VERBOSE_LOGGING) { console.log(`embeddings: ${embeddings}`); }
 	}).catch((error) => {
 		console.log("Error adding to collection: ", error);
 	});
@@ -118,7 +113,7 @@ export async function queryCollectionEmbeddings(
 	queryEmbeddings,
 	nResults = 10
 ) {
-	console.log(`→ queryCollectionEmbeddings: ${collectionName}`);
+	if (VERBOSE_LOGGING) { console.log(`→ queryCollectionEmbeddings: ${collectionName}`); }
 	const collection = await chromaClient.getCollection({
 		name: collectionName,
 	});
@@ -135,8 +130,10 @@ export async function queryCollectionEmbeddings(
 // -- delete from collection --
 // ----------------------------
 export async function deleteFromCollection(collectionName, ids) {
-	console.log(`→ deleteFromCollection: ${collectionName}`);
-	console.log(`→ → ids: ${ids}`);
+	if (VERBOSE_LOGGING) { 
+		console.log(`→ deleteFromCollection: ${collectionName}`);
+		console.log(`→ → ids: ${ids}`);
+	}
 	const collection = await chromaClient.getCollection({
 		name: collectionName,
 	});
@@ -150,7 +147,7 @@ export async function deleteFromCollection(collectionName, ids) {
 // -- list collections --
 // ----------------------
 export async function listCollections() {
-	console.log("→ listCollections");
+	if (VERBOSE_LOGGING) { console.log("→ listCollections"); }
 	const collections = await chromaClient.listCollections();
 	return collections;
 }
@@ -160,7 +157,7 @@ export async function listCollections() {
 // -- delete all collections --
 // ----------------------------
 export async function deleteAllCollections() {
-	console.log("→ deleteAllCollections");
+	if (VERBOSE_LOGGING) { console.log("→ deleteAllCollections"); }
 	const collections = await chromaClient.listCollections();
 
 	for (const collection of collections) {
@@ -173,7 +170,7 @@ export async function deleteAllCollections() {
 // -- peek at collection --
 // ------------------------
 export async function peekCollection(collectionName, limit = 10) {
-	console.log(`→ peekCollection: ${collectionName}`);
+	if (VERBOSE_LOGGING) { console.log(`→ peekCollection: ${collectionName}`); }
 	const collection = await chromaClient.getCollection({
 		name: collectionName,
 	});

@@ -29,6 +29,7 @@ const ACTIVE_COLLECTIONS = new Map();                                           
 const responseStreams = new Map();                                                   // Store response streams by requestId
 const WHISPER_ENABLED = toBoolean(process.env.WHISPER_ENABLED) || false;             // Whether to enable audio transcriptions via Whisper.cpp server (requires the server to be running)
 const WHISPER_SERVER_URL = process.env.WHISPER_SERVER_URL || 'http://127.0.0.1:8087'; // URL of the Whisper.cpp server
+const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
 
 
 export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots) {
@@ -161,7 +162,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
     // ------------------------------------------------------------------------------
     app.get('/init-collection', (req, res) => {
         let collectionName = `chat-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        console.log(`collectionName: ${collectionName}`);
+        if (VERBOSE_LOGGING) { console.log(`creating collectionName: ${collectionName}`); }
         try{
             createCollection(collectionName);
         } catch (error) {
@@ -225,8 +226,10 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
     
                 // add job to queue
                 const job = await llamaQueue.add('chat', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
-                console.log('Added job with ID:', job.id); // Log the job ID
-                console.log('shortPrompt:', fullPrompt.slice(-70)); // Log the Prompt
+                if (VERBOSE_LOGGING) { 
+                    console.log('Added job with ID:', job.id); // Log the job ID
+                    console.log('shortPrompt:', fullPrompt.slice(-70)); // Log the Prompt
+                }
     
                 let success = true;
                 for (const textChunksAndEmbedding of textChunksAndEmbeddings) {
@@ -244,7 +247,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
                 }
     
                 if (success) {
-                    console.log(`Added ${textChunksAndEmbeddings.length} chunks to collection: ${collectionName}`);
+                    if (VERBOSE_LOGGING) { console.log(`Added ${textChunksAndEmbeddings.length} chunks to collection: ${collectionName}`); }
                     
                     // Initialize the entry for this client in ACTIVE_CLIENTS
                     ACTIVE_CLIENTS.set(requestId, null);
@@ -281,9 +284,10 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
 
             // Set a new timeout for this client
             const timeoutId = setTimeout(() => {
-                if (ACTIVE_CLIENTS.has(requestId)) { // Check if the client is still active
+                // Check if the client is still active
+                if (ACTIVE_CLIENTS.has(requestId)) {
                     ACTIVE_CLIENTS.delete(requestId);
-                    console.log(`Removed inactive client: ${requestId}`);
+                    if (VERBOSE_LOGGING) { console.log(`Removed inactive client: ${requestId}`); }
                 }
             }, INACTIVE_THRESHOLD);
 
@@ -291,7 +295,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
             ACTIVE_CLIENTS.set(requestId, timeoutId);
         }
         
-        // console.log(`Heartbeat received for ${requestId}`);
+        // if (VERBOSE_LOGGING) { console.log(`Heartbeat received for ${requestId}`); }
         res.status(200).send(`Heartbeat received for ${requestId}`);
     });
 
@@ -319,7 +323,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
             // Send back the transcription
             res.json({ transcription: response.data });
         } catch (error) {
-            console.log('Error:', error);
+            console.log('Transcribe Error:', error);
             res.status(500).json({ error: error.message });
         }
     });

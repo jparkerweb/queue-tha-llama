@@ -26,7 +26,7 @@ const PORT = process.env.PORT || 3001; // Port for the Express Server to listen 
 const LLM_SERVER_URL = process.env.LLM_SERVER_URL || 'http://localhost:8080';
 const INDEX_HTML_FILE = process.env.INDEX_HTML_FILE || 'index.html';
 const RUN_STARTUP_EMBEDDING_TEST = toBoolean(process.env.RUN_STARTUP_EMBEDDING_TEST) || false;
-const USE_SEMANTIC_ROUTES = toBoolean(process.env.USE_SEMANTIC_ROUTES) || true;
+const USE_SEMANTIC_ROUTES = toBoolean(process.env.USE_SEMANTIC_ROUTES) || false;
 const MAX_CONCURRENT_REQUESTS_FALLBACK = parseInt(process.env.MAX_CONCURRENT_REQUESTS_FALLBACK, 10) || 1;
 const MIN_CHUNK_TOKEN_SIZE = parseInt(process.env.MIN_CHUNK_TOKEN_SIZE, 10) || 150;
 const MAX_CHUNK_TOKEN_SIZE = parseInt(process.env.MAX_CHUNK_TOKEN_SIZE, 10) || 150;
@@ -44,7 +44,7 @@ await redisHeartbeat();
 // (ツ) → Check if Chroma server is running
 await chromaHeartbeat();
 // (ツ) → Create semantic routes
-if (USE_SEMANTIC_ROUTES) await createSemanticRoutes();
+if (USE_SEMANTIC_ROUTES) { await createSemanticRoutes(); }
 // (ツ) → Run embedding test
 if (RUN_STARTUP_EMBEDDING_TEST) { await embeddingTest(); }
 

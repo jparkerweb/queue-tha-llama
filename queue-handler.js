@@ -15,7 +15,7 @@ import { ExpressAdapter } from '@bull-board/express';
 import { llama } from './llm-api-connector.js';
 import { addToCollection, deleteFromCollection } from './chroma.js';
 import { embedText } from './embedding.js';
-import { generateGUID, delay } from './utils.js';
+import { toBoolean, generateGUID, delay } from './utils.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -23,6 +23,7 @@ dotenv.config();
 const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const COMPLETED_JOB_CLEANUP_DELAY = parseInt(process.env.COMPLETED_JOB_CLEANUP_DELAY) || 1000 * 60 * 5;
+const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
 
 
 // -------------------------
@@ -37,7 +38,7 @@ export async function redisHeartbeat() {
         console.log('(ツ) → Redis Online');
         await redisClient.disconnect();
     } catch (error) {
-        console.error(`X → Redis Offline: ${error}`);
+        console.log(`X → Redis Offline: ${error}`);
         process.exit(1); // Exit the process with an error code
     }
 }
@@ -87,7 +88,6 @@ export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTI
         // Check if the job was flagged as inactive
         if (job.data.clientNotActive) {
             console.log(`Skipping inactive job: ${job.id}`);
-            // You can directly complete the job here or perform any cleanup needed
             return;
         }
         
@@ -99,8 +99,8 @@ export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTI
             await streamLlamaData(job.data.fullPrompt, res, job, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP); // Pass the entire job object
             responseStreams.delete(requestId); // Clean up after streaming
         } catch (error) {
-            console.error(`Error streaming data: ${job.id}`);
-            // console.error('Error streaming data:', error);
+            console.log(`Error streaming data: ${job.id}`);
+            // console.log('Error streaming data:', error);
 
             if (error.message.includes('slot unavailable')) {
                 await handleSlotUnavailableError(job); // Pass the entire job object here
@@ -143,7 +143,7 @@ export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTI
         for (let job of completedJobs) {
             if (job.finishedOn && job.finishedOn < timeDelay) {
                 await job.remove();
-                console.log(`Removed completed job: ${job.id}`);
+                if (VERBOSE_LOGGING) { console.log(`Removed completed job: ${job.id}`); }
             }
         }
     }, COMPLETED_JOB_CLEANUP_DELAY);
@@ -155,18 +155,19 @@ export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTI
 // --------------------------------------
 async function handleSlotUnavailableError(job) {
     const jobId = job.id;
-    console.warn('slot unavailable, retrying job:', jobId);
+    if (VERBOSE_LOGGING) { console.warn('slot unavailable, retrying job:', jobId); }
+
     try {
         await delay(2000); // Delay before retrying
 
         // Generate a new unique job ID for retry
         const retryJobId = `retry-${jobId}-${Date.now()}`;
-        console.log('Retrying job with new ID:', retryJobId);
+        if (VERBOSE_LOGGING) { console.log('Retrying job with new ID:', retryJobId); }
 
         // Remove the original job from the queue
         await job.remove()
             .catch(async error => {
-                console.error(`Error removing job: ${job.id}`);
+                console.log(`Error removing job: ${job.id}`);
         });
         
         // remove failed job from Chroma
@@ -175,7 +176,7 @@ async function handleSlotUnavailableError(job) {
         // Re-add the job with the same data and the new job ID
         await llamaQueue.add('chat-retry', job.data, { jobId: retryJobId, delay: 2000 });
     } catch (retryError) {
-        console.error('Error retrying job:', retryError, 'Original job ID:', jobId);
+        console.log('Error retrying job:', retryError, 'Original job ID:', jobId);
     }
 }
 
@@ -189,7 +190,7 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
         let fullResponse = ''; // Store the full response in memory for embedding
         
         // create a short prompt for logging
-        const shortPrompt = prompt.slice(-70);
+        const shortPrompt = prompt.slice(-70).replace(/\n/g, "  ");
 
         console.log(`→ → → starting response to: ...${shortPrompt}`);
 
@@ -200,7 +201,7 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
         }
 
         // Embed the full response
-        const textChunksAndEmbeddings = await embedText(fullResponse, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.error);
+        const textChunksAndEmbeddings = await embedText(fullResponse, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.log);
 
         for (const textChunksAndEmbedding of textChunksAndEmbeddings) {
             // add each chunk to the collection
@@ -211,7 +212,7 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
                 { source: "LLM", tokenCount: textChunksAndEmbedding.tokenCount, dateAdded: Date.now() },
                 textChunksAndEmbedding.text,
             ).catch(error => {
-                console.error('Error adding to collection:', error);
+                console.log('Error adding to collection:', error);
             });
         }
 
@@ -221,7 +222,7 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
         if (error.message.includes('slot unavailable')) {
             await handleSlotUnavailableError(job); // Use job here
         } else {
-            console.error('Error streaming data:', error);
+            console.log('Error streaming data:', error);
             res.end('Error streaming data');
         }
     } finally {

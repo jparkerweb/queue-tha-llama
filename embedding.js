@@ -12,12 +12,14 @@ env.localModelPath = 'models/';
 env.allowRemoteModels = false;
 const ONNX_EMBEDDING_MODEL = process.env.ONNX_EMBEDDING_MODEL || 'all-MiniLM-L6-v2';
 const ONNX_EMBEDDING_MODEL_QUANTIZED = toBoolean(process.env.ONNX_EMBEDDING_MODEL_QUANTIZED) || false;
+const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
 
 // ---------------------------------------------
 // -- Function to create embeddings from text --
 // ---------------------------------------------
 export async function embedText(largeText, maxChunkTokenCount = 150, chunkOverlap = 10) {
-    console.log(`maxChunkTokenCount: ${maxChunkTokenCount}, chunkOverlap: ${chunkOverlap}`);
+    if (VERBOSE_LOGGING) { console.log(`embedding text with maxChunkTokenCount: ${maxChunkTokenCount}, chunkOverlap: ${chunkOverlap}`); }
+    
     // Ensure chunkOverlap is less than maxChunkTokenCount
     if (chunkOverlap >= maxChunkTokenCount) {
         chunkOverlap = maxChunkTokenCount - 1;
@@ -27,7 +29,7 @@ export async function embedText(largeText, maxChunkTokenCount = 150, chunkOverla
     let combinedResults = [];
 
     for (const textChunk of textChunks) {
-        // console.log(`Processing chunk: ${textChunk}`);
+        // if (VERBOSE_LOGGING) { console.log(`Processing chunk: ${textChunk}`); }
         try {
             const text = textChunk.chunk;
             let embedding = await createEmbedding(textChunk.chunk);
@@ -37,8 +39,10 @@ export async function embedText(largeText, maxChunkTokenCount = 150, chunkOverla
             embedding = Array.isArray(embedding) ? embedding : Array.from(embedding);
             
             combinedResults.push({ text, embedding, tokenCount });
-            // console.log(`text chunk: ${textChunk.chunk}`);
-            // console.log(`toekn count: ${textChunk.tokenCount}`);
+            // if (VERBOSE_LOGGING) { 
+            //    console.log(`text chunk: ${textChunk.chunk}`);
+            //    console.log(`toekn count: ${textChunk.tokenCount}`);
+            // }
         } catch (error) {
             console.error('Error creating embedding:', error);
         }

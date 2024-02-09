@@ -12,6 +12,8 @@ import {
 
 const USE_SEMANTIC_ROUTES = toBoolean(process.env.USE_SEMANTIC_ROUTES) || false;
 const TOP_SEMANTIC_ROUTES = parseInt(process.env.TOP_SEMANTIC_ROUTES) || 10;
+const SEMANTIC_ROUTE_SENSITIVITY = parseInt(process.env.SEMANTIC_ROUTE_SENSITIVITY) || 5;
+const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
 
 // ----------------------------------------
 // -- load Semantic Route Data from JSON --
@@ -19,12 +21,11 @@ const TOP_SEMANTIC_ROUTES = parseInt(process.env.TOP_SEMANTIC_ROUTES) || 10;
 // This function loads the semantic route data from a JSON file
 async function loadSemanticRouteData() {
     try {
-        // Use fs.readFile to read the file content
         const data = await fs.readFile('semantic-routes.json', 'utf8');
         return JSON.parse(data); // Parse the JSON string into an object
     } catch (error) {
-        console.error('Error loading semantic route data:', error);
-        throw error; // Rethrow the error to handle it in the calling function
+        console.log('Error loading semantic route data:', error);
+        throw error;
     }
 }
 
@@ -55,8 +56,8 @@ export async function createSemanticRoutes() {
                     embedding,
                     {
                         _topic: d.topic,
-                        _threshold: d.threshold,
-                        _function: d.function,
+                        _threshold: d.distanceThreshold,
+                        _function: d.action,
                         source: "semantic-routes",
                         tokenCount: tokenCount,
                         dateAdded: new Date().toISOString(),
@@ -78,6 +79,7 @@ export async function createSemanticRoutes() {
 // ---------------------------------------------
 export async function matchSemanticRoute(promptEmbedding, res) {
     let routeTopic = null;
+    let routePhrase = null;
     let routeFunction = null;
     let matched = false;
 
@@ -92,13 +94,19 @@ export async function matchSemanticRoute(promptEmbedding, res) {
         if (results) {
             // loop through results
             for (let i = 0; i < results.ids[0].length; i++) {
-                console.log(`(ツ) → Semantic Route Eval: ${results.distances[0][i]} → ${results.metadatas[0][i]._topic} threshold: ${results.metadatas[0][0]._threshold}`)
-                if (results.distances[0][i] <= results.metadatas[0][i]._threshold) {
+                const _threshold = results.metadatas[0][i]._threshold;
+                const _adjustedThreshold = await adjustThreshold(_threshold, SEMANTIC_ROUTE_SENSITIVITY);
+                if (VERBOSE_LOGGING) {
+                    console.log(`(ツ) → Semantic Route Eval: ${results.distances[0][i]} → ${results.metadatas[0][i]._topic} adjusted threshold: ${_adjustedThreshold} (original: ${_threshold})`);
+                }
+                
+                if (results.distances[0][i] <= _adjustedThreshold) {
                     matched = true;
                     routeTopic = results.metadatas[0][i]._topic;
+                    routePhrase = results.documents[0][i];
                     routeFunction = results.metadatas[0][i]._function;
+                    console.log(`(ツ) → Semantic Route Matched: ${routeTopic} → ${routePhrase}`);
                     eval(routeFunction);
-                    console.log(`(ツ) → Semantic Route Matched: ${routeTopic} → ${routeFunction}`);
                     break;
                 }
             }
@@ -106,6 +114,38 @@ export async function matchSemanticRoute(promptEmbedding, res) {
     }
 
     return { matched: matched, topic: routeTopic, func: routeFunction };
+}
+
+
+// ----------------------------------------------------
+// -- adjust threshold function based on sensitivity --
+// ----------------------------------------------------
+function adjustThreshold(originalThreshold, sensitivity) {
+    const minSensitivity = 1;
+    const maxSensitivity = 100;
+    const minThreshold = 0.05;
+    const maxThreshold = 1.0;
+
+    // Adjusting the midpoint to the new sensitivity scale
+    const midSensitivity = 50;
+    const range = maxSensitivity - minSensitivity;
+
+    // Calculate new threshold based on the updated sensitivity scale
+    let adjustedThreshold = originalThreshold;
+    if (sensitivity <= midSensitivity) {
+        // Scale down towards minThreshold as sensitivity moves from midSensitivity to minSensitivity
+        const scale = (originalThreshold - minThreshold) / (midSensitivity - minSensitivity);
+        adjustedThreshold -= scale * (midSensitivity - sensitivity);
+    } else {
+        // Scale up towards maxThreshold as sensitivity moves from midSensitivity to maxSensitivity
+        const scale = (maxThreshold - originalThreshold) / (maxSensitivity - midSensitivity);
+        adjustedThreshold += scale * (sensitivity - midSensitivity);
+    }
+
+    // Ensure adjustedThreshold is within bounds
+    adjustedThreshold = Math.max(minThreshold, Math.min(maxThreshold, adjustedThreshold));
+
+    return adjustedThreshold;
 }
 
 
