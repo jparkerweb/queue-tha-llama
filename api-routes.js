@@ -227,7 +227,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
                 // add job to queue
                 const job = await llamaQueue.add('chat', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
                 if (VERBOSE_LOGGING) { 
-                    console.log('Added job with ID:', job.id); // Log the job ID
+                    console.log('Added chat job with ID:', job.id); // Log the job ID
                     console.log('shortPrompt:', fullPrompt.slice(-70)); // Log the Prompt
                 }
     
@@ -241,7 +241,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
                         { source: "USER", tokenCount: textChunksAndEmbedding.tokenCount, dateAdded: Date.now() },
                         textChunksAndEmbedding.text,
                     ).catch(error => {
-                        console.log('Error adding to collection:', error);
+                        console.log('Error adding chat to collection:', error);
                         success = false;
                     });
                 }
@@ -256,13 +256,13 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
                     responseStreams.set(requestId, res);
                     res.writeHead(200, { 'Content-Type': 'text/plain' });
                 } else {
-                    console.log('Error adding job to queue because of addToCollection failures:', error);
+                    console.log('Error adding chat job to queue because of addToCollection failures:', error);
                     res.status(500).send('Error adding job to queue because of addToCollection failures');
                 }
             }
         } catch (error) {
-            console.log('Error adding job to queue:', error);
-            res.status(500).send('Error adding job to queue');
+            console.log('Error adding chat job to queue:', error);
+            res.status(500).send('Error adding chat job to queue');
         }
     });
 

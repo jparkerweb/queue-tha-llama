@@ -187,6 +187,7 @@ async function handleSlotUnavailableError(job) {
 export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP) {
     try {
         let collectionName = job.opts.collectionName;
+        let jobName = job.name;
         let fullResponse = ''; // Store the full response in memory for embedding
         
         // create a short prompt for logging
@@ -196,8 +197,8 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
 
         // Stream the data to the response
         for await (const chunk of llama(prompt)) {
-            fullResponse += chunk.data.content; // Append the chunk to the full response
             res.write(`${chunk.data.content}`);
+            fullResponse += chunk.data.content; // Append the chunk to the full response
         }
 
         // Embed the full response
