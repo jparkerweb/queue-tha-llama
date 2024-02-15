@@ -4,8 +4,7 @@
 # This script is used to run the LLMServer executable with the correct arguments.
 # The script will ask the user to select the server.exe file and the model file.
 # The script will also ask the user to enter the context size, number of simultaneous requests,
-# host and port.
-
+# host and port, and if they are using CUDA and the number of layers to offload to GPU if so.
 
 # Add Windows Forms for open file dialog
 Add-Type -AssemblyName System.Windows.Forms
@@ -87,6 +86,16 @@ if (-not $modelFilePath) {
     $settings["Paths"]["ModelFile"] = Split-Path $modelFilePath
 }
 
+# Ask user if using CUDA
+$usingCUDA = Read-Host "Are you using CUDA? (Yes/No, default is No)"
+if ($usingCUDA -eq "Yes") {
+    # Ask for the number of layers to offload to GPU
+    $GPULayers = Read-Host "How many layers do you want offloaded to the GPU (default is 10)"
+    if (-not $GPULayers) {
+        $GPULayers = 10
+    }
+}
+
 # Save settings to INI file
 Write-IniFile $iniFilePath $settings
 
@@ -114,6 +123,14 @@ if (-not $serverPort) {
     $serverPort = 8080
 }
 
-# Construct and run the command
-$command = "& `"$serverExePath`" -m `"$modelFilePath`" -c $contextSize -cb -np $simultaneousRequests --host $serverHost --port $serverPort"
+# Construct and run the command with or without GPU layers option
+if ($usingCUDA -eq "Yes") {
+    $command = "& `"$serverExePath`" -m `"$modelFilePath`" -c $contextSize -cb -np $simultaneousRequests --host $serverHost --port $serverPort --n-gpu-layers $GPULayers"
+} else {
+    $command = "& `"$serverExePath`" -m `"$modelFilePath`" -c $contextSize -cb -np $simultaneousRequests --host $serverHost --port $serverPort"
+}
+
+# Run the command
+Write-Host ""
+Write-Host "Running command: $command"
 Invoke-Expression $command
