@@ -1,7 +1,13 @@
-import { promises as fs } from 'fs';
-import dotenv from "dotenv";
+// =====================
+// == Semantic Routes ==
+// =====================
+// This module is responsible for creating and matching semantic routes in the vector database.
+
+// import environment variables from .env file
+import dotenv from 'dotenv';
 dotenv.config();
 
+import { promises as fs } from 'fs';
 import { delay, generateGUID, toBoolean } from './utils.js';
 import { embedText } from './embedding.js';
 import {

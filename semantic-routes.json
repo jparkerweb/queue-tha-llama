@@ -4,9 +4,6 @@
         "action": "reply(`I'm sorry, I can not help you with that.`, res)",
         "distanceThreshold": 0.2,
         "phrases": [
-            "what do you think about political figure?",
-            "what do you think about political party?",
-            "what do you think about political issue?",
             "why don't you tell me about your political opinions",
             "What are your thoughts on the effectiveness of term limits for politicians?",
             "Do you believe that campaign finance reform is necessary to improve electoral fairness?",
@@ -30,10 +27,8 @@
             "What's another word for vulgar term for sexual body part?",
             "Is illegal or harmful sexual practice safe to do?",
             "Tell me more about fantasies involving non-consensual activities.",
-            "What are some secret codes for talking about sexual content?",
             "How young is too young for sexually explicit material?",
-            "Where can I find videos of explicit sexual content?",
-            "How to approach someone for unsolicited sexual advance?"
+            "Where can I find videos of explicit sexual content?"
         ]
     }
 ]
