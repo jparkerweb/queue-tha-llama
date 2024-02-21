@@ -7,21 +7,13 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-const LLM_SERVER_TEMPERATURE = parseFloat(process.env.LLM_SERVER_TEMPERATURE) || 0.1
-const LLM_SERVER_GRAMMARS = parseFloat(process.env.LLM_SERVER_GRAMMARS) || ""
-const LLM_SERVER_STOP_TOKENS = JSON.parse(process.env.LLM_SERVER_STOP_TOKENS) || ["</s>", "LLM:", "USER:"]
-
-// default parameters for llama.cpp
-const paramDefaults = {
-  stream: true,
-  n_predict: 500,
-  temperature: LLM_SERVER_TEMPERATURE,
-  grammar: LLM_SERVER_GRAMMARS,
-  stop: LLM_SERVER_STOP_TOKENS,
-};
-
-// URL of the llama.cpp server
-const LLM_SERVER_URL = process.env.LLM_SERVER_URL || "http:127.0.0.1:8080";
+const LLM_SERVER_API = process.env.LLM_SERVER_API || "llama";
+const LLAMA_SERVER_URL = process.env.LLAMA_SERVER_URL || "http:127.0.0.1:8080";
+const LLM_SERVER_TEMPERATURE = parseFloat(process.env.LLM_SERVER_TEMPERATURE) || 0.1;
+const LLM_SERVER_STOP_TOKENS = JSON.parse(process.env.LLM_SERVER_STOP_TOKENS) || ["</s>", "LLM:", "USER:"];
+const TOGETHER_API_URL = process.env.TOGETHER_API_URL || "https://api.together.ai/v1/complete";
+const TOGETHER_API_KEY = process.env.TOGETHER_API_KEY || "";
+const TOGETHER_MODEL = process.env.TOGETHER_MODEL || "teknium/OpenHermes-2p5-Mistral-7B";
 
 let generation_settings = null;
 
@@ -40,23 +32,59 @@ let generation_settings = null;
 export async function* llama(prompt, params = {}, config = {}) {
   let controller = config.controller;
 
-  if (!controller) {
-    controller = new AbortController();
+  if (!controller) { controller = new AbortController(); }  
+  let response;
+
+  if (LLM_SERVER_API === 'llama') {
+    // parameters for llama.cpp
+    const paramDefaults = {
+      stream: true,
+      n_predict: 500,
+      temperature: LLM_SERVER_TEMPERATURE,
+      stop: LLM_SERVER_STOP_TOKENS,
+    };
+
+    const completionParams = { ...paramDefaults, ...params, prompt };
+
+    response = await fetch(`${LLAMA_SERVER_URL}/completion`, {
+      method: 'POST',
+      body: JSON.stringify(completionParams),
+      headers: {
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        ...(params.api_key ? {'Authorization': `Bearer ${params.api_key}`} : {})
+      },
+      signal: controller.signal,
+    });
+
+  } else if (LLM_SERVER_API === 'together') {
+    // parameters for the Together.ai
+    const paramDefaults = {
+      model: TOGETHER_MODEL,
+      max_tokens: 500,
+      prompt: prompt,
+      temperature: LLM_SERVER_TEMPERATURE,
+      top_p: 0.7,
+      top_k: 50,
+      repetition_penalty: 1,
+      stream_tokens: true,
+      stop: LLM_SERVER_STOP_TOKENS
+    };
+
+    const completionParams = { ...paramDefaults, ...params, prompt };
+
+    response = await fetch(TOGETHER_API_URL, {
+      method: 'POST',
+      body: JSON.stringify(completionParams),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${TOGETHER_API_KEY}`
+      },
+      signal: controller.signal,
+    })
+
   }
-
-  const completionParams = { ...paramDefaults, ...params, prompt };
-
-  const response = await fetch(`${LLM_SERVER_URL}/completion`, {
-    method: 'POST',
-    body: JSON.stringify(completionParams),
-    headers: {
-      'Connection': 'keep-alive',
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',
-      ...(params.api_key ? {'Authorization': `Bearer ${params.api_key}`} : {})
-    },
-    signal: controller.signal,
-  });
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -98,8 +126,18 @@ export async function* llama(prompt, params = {}, config = {}) {
           result[match[1]] = match[2]
           // since we know this is llama.cpp, let's just decode the json in data
           if (result.data) {
+            // if useing together ai and we recieve a stop token, we should stop
+            if (LLM_SERVER_API === 'together' && result.data === "[DONE]") {
+              cont = false;
+              break;
+            }
+
             result.data = JSON.parse(result.data);
-            content += result.data.content;
+            if (LLM_SERVER_API === 'llama') {
+              content += result.data.content;
+            } else if (LLM_SERVER_API === 'together') {
+              content += result.data.token.text;
+            }
 
             // yield
             yield result;

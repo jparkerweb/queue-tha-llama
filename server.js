@@ -8,6 +8,7 @@
 // for all available endpoints and their functionality.
 
 
+// import environment variables from .env file
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -19,13 +20,12 @@ import { chromaHeartbeat } from './chroma.js';
 import { setupApiRoutes } from './api-routes.js';
 import { redisHeartbeat } from './queue-handler.js';
 import { createSemanticRoutes } from './semantic-routes.js';
-import { embeddingTest } from './embedding_test.js';
 import { toBoolean } from './utils.js';
 
 const PORT = process.env.PORT || 3001; // Port for the Express Server to listen on
-const LLM_SERVER_URL = process.env.LLM_SERVER_URL || 'http://localhost:8080';
+const LLAMA_SERVER_URL = process.env.LLAMA_SERVER_URL || 'http://localhost:8080';
+const LLM_SERVER_API = process.env.LLM_SERVER_API || 'llama';
 const INDEX_HTML_FILE = process.env.INDEX_HTML_FILE || 'index.html';
-const RUN_STARTUP_EMBEDDING_TEST = toBoolean(process.env.RUN_STARTUP_EMBEDDING_TEST) || false;
 const USE_SEMANTIC_ROUTES = toBoolean(process.env.USE_SEMANTIC_ROUTES) || false;
 const MAX_CONCURRENT_REQUESTS_FALLBACK = parseInt(process.env.MAX_CONCURRENT_REQUESTS_FALLBACK, 10) || 1;
 const MIN_CHUNK_TOKEN_SIZE = parseInt(process.env.MIN_CHUNK_TOKEN_SIZE, 10) || 150;
@@ -45,8 +45,6 @@ await redisHeartbeat();
 await chromaHeartbeat();
 // (ツ) → Create semantic routes
 if (USE_SEMANTIC_ROUTES) { await createSemanticRoutes(); }
-// (ツ) → Run embedding test
-if (RUN_STARTUP_EMBEDDING_TEST) { await embeddingTest(); }
 
 
 // Calculate chunk token size within the specified range
@@ -86,15 +84,20 @@ setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots);
 // --------------------------------------------------------------------
 async function fetchNCtxValue() {
     try {
-        const response = await fetch(`${LLM_SERVER_URL}/props`);
-        if (!response.ok) {
-            console.error(`X → LLM Server Offline\nError fetching /props: ${response.statusText}`);
-            process.exit(1); // Exit the process with an error code
+        if (LLM_SERVER_API === 'llama') {
+            const response = await fetch(`${LLAMA_SERVER_URL}/props`);
+            if (!response.ok) {
+                console.error(`X → LLM Server Offline\nError fetching /props: ${response.statusText}`);
+                process.exit(1); // Exit the process with an error code
+            } else {
+                console.log('(ツ) → LLM Server Online');
+            }
+            const data = await response.json();
+            return data.default_generation_settings.n_ctx;
         } else {
-            console.log('(ツ) → LLM Server Online');
+            // TODO: Add support for other LLM servers
+            return 1024; // Default n_ctx value
         }
-        const data = await response.json();
-        return data.default_generation_settings.n_ctx;
     } catch (error) {
         console.error('X → LLM Server Offline\nError fetching n_ctx value:', error);
         process.exit(1); // Exit the process with an error code
@@ -102,24 +105,28 @@ async function fetchNCtxValue() {
 }
 
 
-// ----------------------------------------------------------------------
-// -- Function to fetch total_slots value from the LLM "/props" endpoint --
-// ----------------------------------------------------------------------
+// ------------------------------------------------------------------------------
+// -- Function to fetch total_slots value from the Llama.cpp "/props" endpoint --
+// ------------------------------------------------------------------------------
 async function fetchLLMTotalSlots() {
     try {
-        const response = await fetch(`${LLM_SERVER_URL}/props`);
-        if (!response.ok) {
-            console.error('X → Problem fetching "/props" endpoint from LLM Server');
-            console.log(`    using fallback value MAX_CONCURRENT_REQUESTS_FALLBACK: ${MAX_CONCURRENT_REQUESTS_FALLBACK}`)
-            
-            return MAX_CONCURRENT_REQUESTS_FALLBACK
-        }
-        const data = await response.json();
         let total_slots = MAX_CONCURRENT_REQUESTS_FALLBACK || 1;
-        
-        if (data.total_slots) total_slots = data.total_slots;
-        console.log(`(ツ) → LLM Server "total_slots": ${total_slots}`);
 
+        if (LLM_SERVER_API === 'llama') {
+
+            const response = await fetch(`${LLAMA_SERVER_URL}/props`);
+            if (!response.ok) {
+                console.error('X → Problem fetching "/props" endpoint from LLM Server');
+                console.log(`    using fallback value MAX_CONCURRENT_REQUESTS_FALLBACK: ${MAX_CONCURRENT_REQUESTS_FALLBACK}`)
+                
+                return MAX_CONCURRENT_REQUESTS_FALLBACK
+            }
+            const data = await response.json();
+            
+            if (data.total_slots) total_slots = data.total_slots;
+        }
+
+        console.log(`(ツ) → LLM Server "total_slots": ${total_slots}`);
         return total_slots;
     } catch (error) {
         console.error('X → Problem fetching "total_slots" from "/props" endpoint for LLM Server', error);

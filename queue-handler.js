@@ -5,6 +5,9 @@
 // It sets up the queue and the queue handler, and
 // exports the queue for use in other files.
 
+// import environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
 
 import { createClient } from 'redis';
 import bullmqPkg from 'bullmq';
@@ -17,9 +20,7 @@ import { addToCollection, deleteFromCollection } from './chroma.js';
 import { embedText } from './embedding.js';
 import { toBoolean, generateGUID, delay } from './utils.js';
 
-import dotenv from 'dotenv';
-dotenv.config();
-
+const LLM_SERVER_API = process.env.LLM_SERVER_API || "llama";
 const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const COMPLETED_JOB_CLEANUP_DELAY = parseInt(process.env.COMPLETED_JOB_CLEANUP_DELAY) || 1000 * 60 * 5;
@@ -197,8 +198,12 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
 
         // Stream the data to the response
         for await (const chunk of llama(prompt)) {
-            res.write(`${chunk.data.content}`);
-            fullResponse += chunk.data.content; // Append the chunk to the full response
+            let content;
+            if (LLM_SERVER_API === 'llama') { content = chunk.data.content; }
+            else if (LLM_SERVER_API === 'together') { content = chunk.data.token.text; }
+            
+            res.write(`${content}`);
+            fullResponse += content; // Append the chunk to the full response
         }
 
         // Embed the full response
