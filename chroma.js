@@ -2,9 +2,11 @@
 // == Description: ChromaDB client ==
 // ==================================
 
-import { toBoolean } from './utils.js';
-import dotenv from "dotenv";
+// import environment variables from .env file
+import dotenv from 'dotenv';
 dotenv.config();
+
+import { toBoolean } from './utils.js';
 
 const CHROMA_SERVER_URL = process.env.CHROMA_SERVER_URL || "http://localhost:8001";
 const CHROMA_DISTANCE_FUNCTION = process.env.CHROMA_DISTANCE_FUNCTION || "cosine";
