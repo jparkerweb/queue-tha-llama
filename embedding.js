@@ -4,6 +4,9 @@
 // ==================================================================
 // example ⇢ embedText(`some text you want to embed`, 3, 1).catch(console.error);
 
+// import environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
 
 import { env, pipeline, AutoTokenizer } from '@xenova/transformers';
 import { toBoolean } from './utils.js';
@@ -18,7 +21,10 @@ const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
 // -- Function to create embeddings from text --
 // ---------------------------------------------
 export async function embedText(largeText, maxChunkTokenCount = 150, chunkOverlap = 10) {
-    if (VERBOSE_LOGGING) { console.log(`embedding text with maxChunkTokenCount: ${maxChunkTokenCount}, chunkOverlap: ${chunkOverlap}`); }
+    if (VERBOSE_LOGGING) {
+        console.log(`embedding text with maxChunkTokenCount: ${maxChunkTokenCount}, chunkOverlap: ${chunkOverlap}`);
+        console.log(`using model: ${ONNX_EMBEDDING_MODEL}`);
+    }
     
     // Ensure chunkOverlap is less than maxChunkTokenCount
     if (chunkOverlap >= maxChunkTokenCount) {
@@ -29,7 +35,7 @@ export async function embedText(largeText, maxChunkTokenCount = 150, chunkOverla
     let combinedResults = [];
 
     for (const textChunk of textChunks) {
-        // if (VERBOSE_LOGGING) { console.log(`Processing chunk: ${textChunk}`); }
+        if (VERBOSE_LOGGING) { console.log(`Processing chunk: ${textChunk}`); }
         try {
             const text = textChunk.chunk;
             let embedding = await createEmbedding(textChunk.chunk);
@@ -39,10 +45,10 @@ export async function embedText(largeText, maxChunkTokenCount = 150, chunkOverla
             embedding = Array.isArray(embedding) ? embedding : Array.from(embedding);
             
             combinedResults.push({ text, embedding, tokenCount });
-            // if (VERBOSE_LOGGING) { 
-            //    console.log(`text chunk: ${textChunk.chunk}`);
-            //    console.log(`toekn count: ${textChunk.tokenCount}`);
-            // }
+            if (VERBOSE_LOGGING) { 
+               console.log(`text chunk: ${textChunk.chunk}`);
+               console.log(`token count: ${textChunk.tokenCount}`);
+            }
         } catch (error) {
             console.error('Error creating embedding:', error);
         }

@@ -3,6 +3,10 @@
 // ================
 // This file contains the API routes for the chatbot.
 
+// import environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
+
 import fs from 'fs';
 import axios from 'axios';
 import FormData from 'form-data';
@@ -42,6 +46,14 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
     // This endpoint is used by the client to determine how often to send heartbeats
     app.get('/heartbeat-interval', (req, res) => {
         res.json({ heartbeatInterval: INACTIVE_THRESHOLD / 2 });
+    });
+
+    // ------------------------------------------------
+    // -- endpoint to check if verbose logging is on --
+    // ------------------------------------------------
+    // This endpoint is used by the client to determine if verbose logging is enabled
+    app.get('/verbose-logging', (req, res) => {
+        res.json({ verboseLogging: VERBOSE_LOGGING });
     });
 
     // ---------------------------------------------
