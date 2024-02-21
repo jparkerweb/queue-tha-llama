@@ -1,12 +1,14 @@
-import dotenv from "dotenv";
+// import environment variables from .env file
+import dotenv from 'dotenv';
 dotenv.config();
 
-import { generateGUID } from './utils.js';
+import { generateGUID, toBoolean } from './utils.js';
 import { embedText } from './embedding.js';
 import { createCollection, addToCollection, deleteCollection } from './chroma.js';
 
+const ONNX_EMBEDDING_MODEL = process.env.ONNX_EMBEDDING_MODEL || 'all-MiniLM-L6-v2';
 
-export async function embeddingTest() {
+async function embeddingTest() {
     // Create a collection if it doesn't already exist
     const collectionName = 'test-collection';
     await deleteCollection(collectionName);
@@ -60,3 +62,34 @@ export async function embeddingTest() {
         }
     }
 }
+
+// (ツ) → Run embedding test
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('');
+console.log('(ツ) → Running embedding test...');
+console.log(`(ツ) → Embedding Model ${ONNX_EMBEDDING_MODEL}`);
+console.log('');
+console.log('');
+await embeddingTest();
