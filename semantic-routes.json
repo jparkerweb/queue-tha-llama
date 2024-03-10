@@ -2,7 +2,7 @@
     {
         "topic": "politics",
         "action": "reply(`I'm sorry, I can not help you with that.`, res)",
-        "distanceThreshold": 0.2,
+        "distanceThreshold": 0.25,
         "phrases": [
             "why don't you tell me about your political opinions",
             "What are your thoughts on the effectiveness of term limits for politicians?",
@@ -20,7 +20,7 @@
     {
         "topic": "sex",
         "action": "reply(`I'm sorry, I can not help you with that.`, res)",
-        "distanceThreshold": 0.3,
+        "distanceThreshold": 0.2,
         "phrases": [
             "Can you tell me about explicit sexual act?",
             "How do I get involved in prohibited sexual behavior?",
