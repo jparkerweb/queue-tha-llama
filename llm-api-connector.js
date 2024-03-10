@@ -14,6 +14,7 @@ const LLM_SERVER_STOP_TOKENS = JSON.parse(process.env.LLM_SERVER_STOP_TOKENS) ||
 const TOGETHER_API_URL = process.env.TOGETHER_API_URL || "https://api.together.ai/v1/complete";
 const TOGETHER_API_KEY = process.env.TOGETHER_API_KEY || "";
 const TOGETHER_MODEL = process.env.TOGETHER_MODEL || "teknium/OpenHermes-2p5-Mistral-7B";
+const TOGETHER_MAX_RESPONSE_TOKENS = parseInt(process.env.TOGETHER_MAX_RESPONSE_TOKENS) || 500;
 
 let generation_settings = null;
 
@@ -62,7 +63,7 @@ export async function* llama(prompt, params = {}, config = {}) {
     // parameters for the Together.ai
     const paramDefaults = {
       model: TOGETHER_MODEL,
-      max_tokens: 500,
+      max_tokens: TOGETHER_MAX_RESPONSE_TOKENS,
       prompt: prompt,
       temperature: LLM_SERVER_TEMPERATURE,
       top_p: 0.7,

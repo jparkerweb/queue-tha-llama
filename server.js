@@ -32,6 +32,8 @@ const MIN_CHUNK_TOKEN_SIZE = parseInt(process.env.MIN_CHUNK_TOKEN_SIZE, 10) || 1
 const MAX_CHUNK_TOKEN_SIZE = parseInt(process.env.MAX_CHUNK_TOKEN_SIZE, 10) || 150;
 const MIN_CHUNK_TOKEN_OVERLAP = process.env.MIN_CHUNK_TOKEN_OVERLAP !== undefined ? parseInt(process.env.MIN_CHUNK_TOKEN_OVERLAP, 10) : 10;
 const MAX_CHUNK_TOKEN_OVERLAP = process.env.MAX_CHUNK_TOKEN_OVERLAP !== undefined ? parseInt(process.env.MAX_CHUNK_TOKEN_OVERLAP, 10) : 10;
+const TOGETHER_CONTEXT_LENGTH = parseInt(process.env.TOGETHER_CONTEXT_LENGTH, 10) || 2048;
+const TOGETHER_MAX_RESPONSE_TOKENS = parseInt(process.env.TOGETHER_MAX_RESPONSE_TOKENS) || 500;
 
 
 console.log('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'); // Clears the console
@@ -94,6 +96,8 @@ async function fetchNCtxValue() {
             }
             const data = await response.json();
             return data.default_generation_settings.n_ctx;
+        } else if (LLM_SERVER_API === 'together') {
+            return (TOGETHER_CONTEXT_LENGTH - TOGETHER_MAX_RESPONSE_TOKENS);
         } else {
             // TODO: Add support for other LLM servers
             return 1024; // Default n_ctx value
