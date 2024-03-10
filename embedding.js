@@ -12,7 +12,9 @@ import { env, pipeline, AutoTokenizer } from '@xenova/transformers';
 import { toBoolean } from './utils.js';
 
 env.localModelPath = 'models/';
-env.allowRemoteModels = false;
+env.cacheDir = 'models/';
+env.allowRemoteModels = toBoolean(process.env.ALLOW_REMOTE_MODELS) || true;
+
 const ONNX_EMBEDDING_MODEL = process.env.ONNX_EMBEDDING_MODEL || 'all-MiniLM-L6-v2';
 const ONNX_EMBEDDING_MODEL_QUANTIZED = toBoolean(process.env.ONNX_EMBEDDING_MODEL_QUANTIZED) || false;
 const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
