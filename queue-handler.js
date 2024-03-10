@@ -23,6 +23,8 @@ import { toBoolean, generateGUID, delay } from './utils.js';
 const LLM_SERVER_API = process.env.LLM_SERVER_API || "llama";
 const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
+const REDIS_USER = process.env.REDIS_USER || "default";
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || "";
 const COMPLETED_JOB_CLEANUP_DELAY = parseInt(process.env.COMPLETED_JOB_CLEANUP_DELAY) || 1000 * 60 * 5;
 const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
 
@@ -33,13 +35,14 @@ const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
 export async function redisHeartbeat() {
     try {
         const redisClient = createClient({
-            url: `redis://${REDIS_HOST}:${REDIS_PORT}`
+            url: `redis://${REDIS_USER}:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}`
         });
         await redisClient.connect();
-        console.log('(ツ) → Redis Online');
+        console.log(`(ツ) → Redis Online → ${REDIS_HOST}:${REDIS_PORT}`);
         await redisClient.disconnect();
     } catch (error) {
         console.log(`X → Redis Offline: ${error}`);
+        console.log(`  redis://${REDIS_HOST}:${REDIS_PORT}`);
         process.exit(1); // Exit the process with an error code
     }
 }
@@ -50,7 +53,9 @@ export async function redisHeartbeat() {
 // ---------------------------
 const llamaQueue = new Queue('llama-requests', { connection: {
     host: REDIS_HOST,
-    port: REDIS_PORT
+    port: REDIS_PORT,
+    username: REDIS_USER,
+    password: REDIS_PASSWORD
 }});
 
 
@@ -110,7 +115,9 @@ export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTI
     }, { 
         connection: {
             host: REDIS_HOST,
-            port: REDIS_PORT
+            port: REDIS_PORT,
+            username: REDIS_USER,
+            password: REDIS_PASSWORD
         },
         concurrency: total_slots
     });

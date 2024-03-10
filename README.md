@@ -21,7 +21,7 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
   
     run redis in docker
     ```
-    docker run -p 6379:6379 --name llm-redis -d redis
+    docker run -p 6379:6379 --name llm-redis -d redis redis-server --requirepass "yourpassword" 
     ```
 
 - ### Setup [Chroma](https://www.trychroma.com/) Vector Store Container
@@ -39,14 +39,18 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
   docker run -d --name llm-chroma -p 8001:8000 -v C:\Git\llama\chromadb-storage:/chroma/chroma chromadb/chroma
   ```
 
-- ### Download Embedding Models
+- ### Download Embedding Models  
+  Skip this if the `.env` variable `ALLOW_REMOTE_MODELS` is true [default]; The model will automatically be downloaded as needed by the app.
+  
   - ##### all-MiniLM-L6-v2
-    - download all files from https://huggingface.co/Xenova/all-MiniLM-L6-v2/tree/main and save them to the `models/all-Min0LM-L6-v2` folder
+    - download all files from https://huggingface.co/Xenova/all-MiniLM-L6-v2/tree/main and save them to the `models/Xenova/all-Min0LM-L6-v2` folder
 
   - ##### paraphrase-multilingual-MiniLM-L12-v2 (optional)
-    - download all files from https://huggingface.co/Xenova/paraphrase-multilingual-MiniLM-L12-v2/tree/main and save them to the `models/paraphrase-multilingual-MiniLM-L12-v2` folder
+    - download all files from https://huggingface.co/Xenova/paraphrase-multilingual-MiniLM-L12-v2/tree/main and save them to the `models/Xenova/paraphrase-multilingual-MiniLM-L12-v2` folder
 
-- ### Download and Run an LLM via Llama.cpp  
+- ### Download and Run an LLM via Llama.cpp
+  Skip this if using together.ai API (`.env` variable `LLM_SERVER_API="together"`)
+
   - Download the lastest version of `llama.cpp` from https://github.com/ggerganov/llama.cpp or run the downloader PowerShell Script here:  
     `./tools/download-latest-llama.ps1`
   - Download a model (GGUF architecture) and save to your computer (note the path as it will be required when runing your LLM Server)  
@@ -59,12 +63,13 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
 
   - Run the Llama.cpp server with continuous batching and parallel requests via command line or llmserver PowerShell Script:  
     `/tools/llmserver.ps1`
-
+ 
     ```
     .\server.exe -m .\models\7b\mistral-7b-instruct-v0.2.Q4_K_M.gguf -c 2048 -cb -np 2
     ```
 
 - ### (OPTIONAL) Download and Run an Automatic Speech Recognition model via Whisper.cpp
+  used for audio transcriptions (experimental) 
   - [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
 
 ---

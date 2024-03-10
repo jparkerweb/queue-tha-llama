@@ -21,12 +21,17 @@ const chromaClient = new ChromaClient({ path: CHROMA_SERVER_URL, });
 // ---------------
 // This function sends a heartbeat to the Chroma server to check if it is running.
 export async function chromaHeartbeat() {
+	console.info("(ツ) → Checking Chroma Vector Database...");
+	console.info(`       ${CHROMA_SERVER_URL}`);
+
 	const heartbeat = await chromaClient.heartbeat()
 		.then((response) => {
 			console.log("(ツ) → Chroma Vector Database Online: ", response);
+			console.log(`  ${CHROMA_SERVER_URL}`);
 		})
 		.catch((error) => {
 			console.error("X → Chroma Vector Database Offline: ", error);
+			console.log(`  ${CHROMA_SERVER_URL}`);
 			process.exit(1); // exit with error
 		});
 }
