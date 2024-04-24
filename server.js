@@ -3,9 +3,9 @@
 // ============================= 
 // This file contains the server code for the chatbot. It uses Express to handle
 // HTTP requests and Bull to handle the queue. It also uses Bull Board to provide
-// a dashboard for the queue. The chatbot uses the llama function from llm-api-connector.js
-// to generate text based on the prompt provided by the client. See api-routes.js
-// for all available endpoints and their functionality.
+// a dashboard for the queue. The chatbot uses llm-api.js to generate text based
+// on the prompt provided by the client. See api-routes.js for all available
+// endpoints and their functionality.
 
 
 // import environment variables from .env file
@@ -22,18 +22,18 @@ import { redisHeartbeat } from './queue-handler.js';
 import { createSemanticRoutes } from './semantic-routes.js';
 import { toBoolean } from './utils.js';
 
-const PORT = process.env.PORT || 3001; // Port for the Express Server to listen on
-const LLAMA_SERVER_URL = process.env.LLAMA_SERVER_URL || 'http://localhost:8080';
-const LLM_SERVER_API = process.env.LLM_SERVER_API || 'llama';
-const INDEX_HTML_FILE = process.env.INDEX_HTML_FILE || 'index.html';
+const PORT = process.env.PORT; // Port for the Express Server to listen on
+const LLM_BASE_URL = process.env.LLM_BASE_URL;
+const LLM_SERVER_API = process.env.LLM_SERVER_API;
+const INDEX_HTML_FILE = process.env.INDEX_HTML_FILE;
 const USE_SEMANTIC_ROUTES = toBoolean(process.env.USE_SEMANTIC_ROUTES) || false;
 const MAX_CONCURRENT_REQUESTS_FALLBACK = parseInt(process.env.MAX_CONCURRENT_REQUESTS_FALLBACK, 10) || 1;
 const MIN_CHUNK_TOKEN_SIZE = parseInt(process.env.MIN_CHUNK_TOKEN_SIZE, 10) || 150;
 const MAX_CHUNK_TOKEN_SIZE = parseInt(process.env.MAX_CHUNK_TOKEN_SIZE, 10) || 150;
 const MIN_CHUNK_TOKEN_OVERLAP = process.env.MIN_CHUNK_TOKEN_OVERLAP !== undefined ? parseInt(process.env.MIN_CHUNK_TOKEN_OVERLAP, 10) : 10;
 const MAX_CHUNK_TOKEN_OVERLAP = process.env.MAX_CHUNK_TOKEN_OVERLAP !== undefined ? parseInt(process.env.MAX_CHUNK_TOKEN_OVERLAP, 10) : 10;
-const TOGETHER_CONTEXT_LENGTH = parseInt(process.env.TOGETHER_CONTEXT_LENGTH, 10) || 2048;
-const TOGETHER_MAX_RESPONSE_TOKENS = parseInt(process.env.TOGETHER_MAX_RESPONSE_TOKENS) || 500;
+const LLM_CONTEXT_LENGTH = parseInt(process.env.LLM_CONTEXT_LENGTH, 10) || 2048;
+const LLM_MAX_RESPONSE_TOKENS = parseInt(process.env.LLM_MAX_RESPONSE_TOKENS) || 500;
 
 
 console.log('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n'); // Clears the console
@@ -87,7 +87,7 @@ setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots);
 async function fetchNCtxValue() {
     try {
         if (LLM_SERVER_API === 'llama') {
-            const response = await fetch(`${LLAMA_SERVER_URL}/props`);
+            const response = await fetch(`${LLM_BASE_URL}/props`);
             if (!response.ok) {
                 console.error(`X → LLM Server Offline\nError fetching /props: ${response.statusText}`);
                 process.exit(1); // Exit the process with an error code
@@ -96,11 +96,8 @@ async function fetchNCtxValue() {
             }
             const data = await response.json();
             return data.default_generation_settings.n_ctx;
-        } else if (LLM_SERVER_API === 'together') {
-            return (TOGETHER_CONTEXT_LENGTH - TOGETHER_MAX_RESPONSE_TOKENS);
         } else {
-            // TODO: Add support for other LLM servers
-            return 1024; // Default n_ctx value
+            return (LLM_CONTEXT_LENGTH - LLM_MAX_RESPONSE_TOKENS);
         }
     } catch (error) {
         console.error('X → LLM Server Offline\nError fetching n_ctx value:', error);
@@ -118,7 +115,7 @@ async function fetchLLMTotalSlots() {
 
         if (LLM_SERVER_API === 'llama') {
 
-            const response = await fetch(`${LLAMA_SERVER_URL}/props`);
+            const response = await fetch(`${LLM_BASE_URL}/props`);
             if (!response.ok) {
                 console.error('X → Problem fetching "/props" endpoint from LLM Server');
                 console.log(`    using fallback value MAX_CONCURRENT_REQUESTS_FALLBACK: ${MAX_CONCURRENT_REQUESTS_FALLBACK}`)

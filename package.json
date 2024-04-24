@@ -1,25 +1,26 @@
 {
-  "name": "llama-client",
+  "name": "queue-tha-llama",
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "build": "npm ci",
+    "build": "npm ci"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@bull-board/api": "5.14.1",
-    "@bull-board/express": "5.14.1",
-    "@xenova/transformers": "2.15.1",
-    "axios": "^1.6.7",
-    "bullmq": "^5.3.1",
-    "chromadb": "^1.8.1",
+    "@bull-board/api": "5.16.0",
+    "@bull-board/express": "5.16.0",
+    "@xenova/transformers": "2.17.1",
+    "axios": "1.6.8",
+    "bullmq": "5.7.4",
+    "chromadb": "1.8.1",
     "dotenv": "^16.4.5",
-    "express": "^4.18.2",
+    "express": "4.19.2",
     "form-data": "^4.0.0",
+    "openai": "^4.38.3",
     "path": "^0.12.7",
     "redis": "^4.6.13"
   }

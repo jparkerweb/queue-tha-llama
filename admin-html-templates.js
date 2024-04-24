@@ -170,10 +170,10 @@ export async function htmlDeleteCollections() {
     <body>
         <div class='wrapper'>
             <div class="message">🔪 Deleted All Collections</div>
-            <div class="timer" id="countdown">Redirecting in 3 seconds...</div>
+            <div class="timer" id="countdown">Redirecting in 2 seconds...</div>
         </div>
         <script>
-        let timeLeft = 3;
+        let timeLeft = 2;
         const timerElement = document.getElementById("countdown");
         const countdown = setInterval(() => {
             timeLeft--;
@@ -237,10 +237,10 @@ export async function htmlDeleteCollection(collectionName) {
     <body>
         <div class='wrapper'>
             <div class="message">🔪 Deleted Collection<br><span class='collection-name'>${collectionName}</span></div>
-            <div class="timer" id="countdown">Redirecting in 3 seconds...</div>
+            <div class="timer" id="countdown">Redirecting in 1 second...</div>
         </div>
         <script>
-        let timeLeft = 3;
+        let timeLeft = 1;
         const timerElement = document.getElementById("countdown");
         const countdown = setInterval(() => {
             timeLeft--;

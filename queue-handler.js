@@ -15,12 +15,11 @@ const { Queue, Worker } = bullmqPkg;
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter.js';
 import { ExpressAdapter } from '@bull-board/express';
-import { llama } from './llm-api-connector.js';
+import { fetchChatCompletion } from './llm-api.js';
 import { addToCollection, deleteFromCollection } from './chroma.js';
 import { embedText } from './embedding.js';
 import { toBoolean, generateGUID, delay } from './utils.js';
 
-const LLM_SERVER_API = process.env.LLM_SERVER_API || "llama";
 const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const REDIS_USER = process.env.REDIS_USER || "default";
@@ -199,16 +198,14 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
         let fullResponse = ''; // Store the full response in memory for embedding
         
         // create a short prompt for logging
-        const shortPrompt = prompt.slice(-70).replace(/\n/g, "  ");
+        const shortPrompt = prompt.slice(-70);
 
         console.log(`→ → → starting response to: ...${shortPrompt}`);
 
         // Stream the data to the response
-        for await (const chunk of llama(prompt)) {
-            let content;
-            if (LLM_SERVER_API === 'llama') { content = chunk.data.content; }
-            else if (LLM_SERVER_API === 'together') { content = chunk.data.token.text; }
-            
+        for await (const chunk of fetchChatCompletion(prompt)) {
+            let content = chunk;
+
             res.write(`${content}`);
             fullResponse += content; // Append the chunk to the full response
         }

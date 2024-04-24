@@ -209,7 +209,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
             const textChunksAndEmbeddings = await embedText(prompt, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.log);
 
             // setup variables for building prompts
-            let fullPrompt = prompt;
+            let fullPrompt = [];
             let previousPrompts = "";
             let originalPrompt = prompt;
             let originalPromptEmbedding = textChunksAndEmbeddings[0].embedding;
@@ -225,17 +225,23 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
                 
                 // sort contextQueryResults by metadata.dateAdded
                 contextQueryResults = await sortResultsByDateAdded(contextQueryResults);
+
+                fullPrompt.push({ role: 'system', content: `${promptInstructions}` });
     
-                // add contextQueryResults to previousPrompts
+                // add contextQueryResults to fullPrompt
                 if (contextQueryResults && contextQueryResults.ids[0].length > 0) {
                     for (let i = 0; i < contextQueryResults.ids[0].length; i++) {
-                        previousPrompts += `${prmoptSeperator}${contextQueryResults.metadatas[0][i].source}: ${contextQueryResults.documents[0][i]}`;
+                        if (contextQueryResults.metadatas[0][i].source === "USER") {
+                            fullPrompt.push({ role: 'user', content: `${contextQueryResults.documents[0][i]}` });
+                        } else {
+                            fullPrompt.push({ role: 'system', content: `${contextQueryResults.documents[0][i]}` });
+                        }
                     }
                 }
     
                 // finalize fullPrompt
-                fullPrompt = `${promptInstructions}${previousPrompts}${prmoptSeperator}${prefixUserPrompt}USER: ${originalPrompt}\nLLM:`;
-    
+                fullPrompt.push({ role: 'user', content: `${originalPrompt}` });
+
                 // add job to queue
                 const job = await llamaQueue.add('chat', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
                 if (VERBOSE_LOGGING) { 
@@ -274,7 +280,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
             }
         } catch (error) {
             console.log('Error adding chat job to queue:', error);
-            res.status(500).send('Error adding chat job to queue');
+            res.status(500).send('I\'m sorry but there was an issue processing your request, please try again');
         }
     });
 
