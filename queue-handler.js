@@ -130,11 +130,14 @@ export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTI
 
         for (let job of queuedJobs) {
             if (!ACTIVE_CLIENTS.has(job.data.requestId) && !job.data.clientNotActive) {
-                // Add a flag to indicate that the client is not active
                 job.data.clientNotActive = true;
-                // await job.update(job.data);
-                await job.remove(); // Remove the job from the queue
-                console.log(`Flagged job as inactive: ${job.id}`);
+
+                try {
+                    await job.remove(); // Remove the job from the queue
+                    console.log(`Flagged job as inactive: ${job.id}`);
+                } catch (error) {   
+                    console.log(`Error flagging job as inactive: ${job.id}`);
+                }
             }
         }
     }, INACTIVE_THRESHOLD);
@@ -151,6 +154,13 @@ export function setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTI
             if (job.finishedOn && job.finishedOn < timeDelay) {
                 await job.remove();
                 if (VERBOSE_LOGGING) { console.log(`Removed completed job: ${job.id}`); }
+
+                try {
+                    await job.remove(); // Remove the job from the queue
+                    if (VERBOSE_LOGGING) { console.log(`Removed completed job: ${job.id}`); }
+                } catch (error) {   
+                    console.log(`Error removing completed job: ${job.id}`);
+                }
             }
         }
     }, COMPLETED_JOB_CLEANUP_DELAY);
@@ -198,7 +208,8 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
         let fullResponse = ''; // Store the full response in memory for embedding
         
         // create a short prompt for logging
-        const shortPrompt = prompt.slice(-70);
+        const lastPrompt = prompt[prompt.length - 1].content;
+        const shortPrompt = lastPrompt.slice(-70);
 
         console.log(`→ → → starting response to: ...${shortPrompt}`);
 
@@ -219,7 +230,7 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
                 collectionName,
                 generateGUID(),
                 textChunksAndEmbedding.embedding,
-                { source: "LLM", tokenCount: textChunksAndEmbedding.tokenCount, dateAdded: Date.now() },
+                { source: "assistant", tokenCount: textChunksAndEmbedding.tokenCount, dateAdded: Date.now() },
                 textChunksAndEmbedding.text,
             ).catch(error => {
                 console.log('Error adding to collection:', error);

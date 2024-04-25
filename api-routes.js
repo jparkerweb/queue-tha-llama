@@ -210,10 +210,8 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
 
             // setup variables for building prompts
             let fullPrompt = [];
-            let previousPrompts = "";
             let originalPrompt = prompt;
             let originalPromptEmbedding = textChunksAndEmbeddings[0].embedding;
-            let prmoptSeperator = "\n\n";
 
             // look for a semantic route match
             const semanticRoute = await matchSemanticRoute(originalPromptEmbedding, res);
@@ -234,19 +232,21 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
                         if (contextQueryResults.metadatas[0][i].source === "USER") {
                             fullPrompt.push({ role: 'user', content: `${contextQueryResults.documents[0][i]}` });
                         } else {
-                            fullPrompt.push({ role: 'system', content: `${contextQueryResults.documents[0][i]}` });
+                            fullPrompt.push({ role: 'assistant', content: `${contextQueryResults.documents[0][i]}` });
                         }
                     }
                 }
     
                 // finalize fullPrompt
+                // fullPrompt.push({ role: 'system', content: `${prefixUserPrompt}` });
                 fullPrompt.push({ role: 'user', content: `${originalPrompt}` });
 
                 // add job to queue
                 const job = await llamaQueue.add('chat', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
                 if (VERBOSE_LOGGING) { 
                     console.log('Added chat job with ID:', job.id); // Log the job ID
-                    console.log('shortPrompt:', fullPrompt.slice(-70)); // Log the Prompt
+                    let lastPrompt = fullPrompt[(fullPrompt.length - 1)].content;
+                    console.log('shortPrompt:', lastPrompt.slice(-70)); // Log the Prompt
                 }
     
                 let success = true;
@@ -256,7 +256,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
                         collectionName,
                         promptGUID,
                         textChunksAndEmbedding.embedding,
-                        { source: "USER", tokenCount: textChunksAndEmbedding.tokenCount, dateAdded: Date.now() },
+                        { source: "user", tokenCount: textChunksAndEmbedding.tokenCount, dateAdded: Date.now() },
                         textChunksAndEmbedding.text,
                     ).catch(error => {
                         console.log('Error adding chat to collection:', error);

@@ -27,12 +27,16 @@ export async function* fetchChatCompletion(prompt) {
     if (typeof prompt === 'string') {
         prompt = JSON.parse(prompt);
     }
+    let stop = LLM_SERVER_STOP_TOKENS;
+    if (typeof stop === 'string') {
+        stop = JSON.parse(stop);
+    }
 
     const chatCompletion = await openai.chat.completions.create({
         messages: prompt,
         model: LLM_MODEL,
         max_tokens: LLM_MAX_RESPONSE_TOKENS,
-        stop: LLM_SERVER_STOP_TOKENS,
+        stop: stop,
         temperature: LLM_SERVER_TEMPERATURE,
         top_p: 0.7,
         stream: true,
@@ -40,6 +44,6 @@ export async function* fetchChatCompletion(prompt) {
     for await (const chunk of chatCompletion) {
         const tokenText = chunk.choices[0]?.delta?.content || "";
         // yield the token text to the client
-        yield tokenText;
+        if (tokenText !== '') { yield tokenText; }
     }
 }
