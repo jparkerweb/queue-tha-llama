@@ -309,6 +309,15 @@ function appendToMessageElement(messageElement, text) {
             chunkContainer.style.transform = 'translateX(0)';
         }, 10);
 
+        scrollSectionToTop(messageElement);
+    }
+}
+
+// Scroll the section if not at the top
+function scrollSectionToTop(section) {
+    const messagesContainer = document.getElementById('messages');
+    // scroll down unless the section is at the top
+    if (section.offsetTop > messagesContainer.scrollTop) {
         scrollToBottom();
     }
 }
