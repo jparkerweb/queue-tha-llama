@@ -16,7 +16,7 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 
-import { chromaHeartbeat } from './chroma.js';
+import { chromaHeartbeat, cleanupOldChromaDBCollections } from './chroma.js';
 import { setupApiRoutes } from './api-routes.js';
 import { redisHeartbeat } from './queue-handler.js';
 import { createSemanticRoutes } from './semantic-routes.js';
@@ -45,6 +45,8 @@ const total_slots = await fetchLLMTotalSlots();
 await redisHeartbeat();
 // (ツ) → Check if Chroma server is running
 await chromaHeartbeat();
+// (ツ) → Cleanup old ChromaDB collections
+cleanupOldChromaDBCollections();
 // (ツ) → Create semantic routes
 if (USE_SEMANTIC_ROUTES) { await createSemanticRoutes(); }
 

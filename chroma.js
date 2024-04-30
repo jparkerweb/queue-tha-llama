@@ -11,6 +11,8 @@ import { toBoolean } from './utils.js';
 const CHROMA_SERVER_URL = process.env.CHROMA_SERVER_URL || "http://localhost:8001";
 const CHROMA_DISTANCE_FUNCTION = process.env.CHROMA_DISTANCE_FUNCTION || "cosine";
 const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
+const CHROMADB_COLLECTION_CLEANUP_INTERVAL = parseInt(process.env.CHROMADB_COLLECTION_CLEANUP_INTERVAL)
+const CHROMADB_COLLECTION_ALLOWED_AGE = parseInt(process.env.CHROMADB_COLLECTION_ALLOWED_AGE)
 
 import { ChromaClient } from "chromadb";
 const chromaClient = new ChromaClient({ path: CHROMA_SERVER_URL, });
@@ -47,6 +49,7 @@ export async function createCollection(collectionName, description = "a collecti
 		metadata: {
 			"hnsw:space": CHROMA_DISTANCE_FUNCTION,
 			description: description,
+			dateCreated: new Date().toISOString(),
 		},
 	});
 }
@@ -185,6 +188,23 @@ export async function peekCollection(collectionName, limit = 10) {
 		limit: limit,
 	});
 	return results;
+}
+
+export async function cleanupOldChromaDBCollections() {
+    // --------------------------------------------------
+    // -- Cleanup routine for old chromadb collections --
+    // --------------------------------------------------
+    setInterval(async () => {
+        const collections = await listCollections();
+		for (let collection of collections) {
+			const collectionName = collection.name;
+			const collectionAge = (Date.now() - new Date(collection.metadata.dateCreated).getTime());
+			if (collectionAge > CHROMADB_COLLECTION_ALLOWED_AGE) {
+				await deleteCollection(collectionName);
+				console.log(`Deleted old collection: ${collectionName}`);
+			}
+		}
+    }, CHROMADB_COLLECTION_CLEANUP_INTERVAL);
 }
 
 
