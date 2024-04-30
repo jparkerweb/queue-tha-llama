@@ -322,7 +322,6 @@ function scrollSectionToTop(section) {
     }
 }
 
-
 // Scroll to the bottom of the messages container
 function scrollToBottom() {
     const messagesContainer = document.getElementById('messages');
