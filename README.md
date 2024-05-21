@@ -49,7 +49,7 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
     - download all files from https://huggingface.co/Xenova/paraphrase-multilingual-MiniLM-L12-v2/tree/main and save them to the `models/Xenova/paraphrase-multilingual-MiniLM-L12-v2` folder
 
 - ### Download and Run an LLM via Llama.cpp
-  Skip this if using a cloud API (`.env` variable `LLM_SERVER_API="cloud"`)
+  Only requried if running `Llama.cpp`, skip this if using a cloud API or ollama (`.env` variable `LLM_SERVER_API="other"`)
 
   - Download the lastest version of `llama.cpp` from https://github.com/ggerganov/llama.cpp or run the downloader PowerShell Script here:  
     `./tools/download-latest-llama.ps1`
@@ -68,6 +68,16 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
     ```
     .\server.exe -m .\models\7b\mistral-7b-instruct-v0.2.Q4_K_M.gguf -c 2048 -cb -np 2
     ```
+
+- ### (OPTIONAL) Setup AWS Bedrock .evn variable
+  If using AWS Bedrock for LLM Inference set the follwing `.env` variables:
+  - LLM_BEDROCK=true
+  - LLM_BEDROCK_REGION="us-west-2"                                         # bedrock region
+  - LLM_BEDROCK_ACCESS_KEY_ID="AKIAxxxxxxxxxxxxxx"                         # bedrock access key
+  - LLM_BEDROCK_SECRET_ACCESS_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # bedrock secret key
+
+  additionally, `LLM_MODEL` `.env` variable value must be set to one of the supported models as defined here:  
+  https://github.com/jparkerweb/bedrock-wrapper?tab=readme-ov-file#supported-models
 
 - ### (OPTIONAL) Download and Run an Automatic Speech Recognition model via Whisper.cpp
   used for audio transcriptions (experimental) 

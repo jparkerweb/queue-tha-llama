@@ -229,7 +229,7 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
                 // add contextQueryResults to fullPrompt
                 if (contextQueryResults && contextQueryResults.ids[0].length > 0) {
                     for (let i = 0; i < contextQueryResults.ids[0].length; i++) {
-                        if (contextQueryResults.metadatas[0][i].source === "USER") {
+                        if (contextQueryResults.metadatas[0][i].source.toLowerCase() === "user") {
                             fullPrompt.push({ role: 'user', content: `${contextQueryResults.documents[0][i]}` });
                         } else {
                             fullPrompt.push({ role: 'assistant', content: `${contextQueryResults.documents[0][i]}` });

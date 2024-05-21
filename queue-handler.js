@@ -15,7 +15,7 @@ const { Queue, Worker } = bullmqPkg;
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter.js';
 import { ExpressAdapter } from '@bull-board/express';
-import { fetchChatCompletion } from './llm-api.js';
+import { fetchChatCompletion, fetchBedrockChatCompletion } from './llm-api.js';
 import { addToCollection, deleteFromCollection } from './chroma.js';
 import { embedText } from './embedding.js';
 import { toBoolean, generateGUID, delay } from './utils.js';
@@ -26,6 +26,7 @@ const REDIS_USER = process.env.REDIS_USER || "default";
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD || "";
 const COMPLETED_JOB_CLEANUP_DELAY = parseInt(process.env.COMPLETED_JOB_CLEANUP_DELAY) || 1000 * 60 * 5;
 const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
+const LLM_BEDROCK = toBoolean(process.env.LLM_BEDROCK) || false;
 
 
 // -------------------------
@@ -214,11 +215,20 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
         console.log(`→ → → starting response to: ...${shortPrompt}`);
 
         // Stream the data to the response
-        for await (const chunk of fetchChatCompletion(prompt)) {
-            let content = chunk;
+        if (LLM_BEDROCK) {
+            for await (const chunk of fetchBedrockChatCompletion(prompt)) {
+                let content = chunk;
 
-            res.write(`${content}`);
-            fullResponse += content; // Append the chunk to the full response
+                res.write(`${content}`);
+                fullResponse += content; // Append the chunk to the full response
+            }
+        } else {
+            for await (const chunk of fetchChatCompletion(prompt)) {
+                let content = chunk;
+
+                res.write(`${content}`);
+                fullResponse += content; // Append the chunk to the full response
+            }
         }
 
         // Embed the full response
