@@ -15,6 +15,7 @@ dotenv.config();
 import express from 'express';
 import http from 'http';
 import path from 'path';
+import fs from 'fs';
 
 import { chromaHeartbeat, cleanupOldChromaDBCollections } from './chroma.js';
 import { setupApiRoutes } from './api-routes.js';
@@ -64,16 +65,40 @@ CHUNK_TOKEN_OVERLAP = Math.min(MAX_CHUNK_TOKEN_OVERLAP, CHUNK_TOKEN_OVERLAP);
 console.log(`(ツ) → CHUNK_TOKEN_OVERLAP value: ${CHUNK_TOKEN_OVERLAP}`);
 
 
-// ----------------
-// -- Middleware --
-// ----------------
-// set up Express and HTTP server
+// ------------------------------------
+// -- set up Express and HTTP server --
+// ------------------------------------
 const app = express();
 const server = http.createServer(app);
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), { index: INDEX_HTML_FILE }));
+
+
+// --------------------------------------------
+// -- Read the package.json file app version --
+// --------------------------------------------
+const packageJsonPath = path.join(__dirname, 'package.json');
+let appVersion = 'unknown';
+fs.readFile(packageJsonPath, 'utf8', (err, data) => {
+  if (err) {
+    console.error('Error reading package.json:', err);
+  } else {
+    // Parse the JSON data
+    const packageJson = JSON.parse(data);
+    // Store the version number
+    appVersion = packageJson.version;
+  }
+});
+
+
+// ----------------------------------------------------
+// -- Create an endpoint to serve the version number --
+// ----------------------------------------------------
+app.get('/version', (req, res) => {
+    res.json({ version: appVersion });
+});
 
 
 // -----------------------
