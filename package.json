@@ -1,6 +1,6 @@
 {
   "name": "queue-tha-llama",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "",
   "main": "server.js",
   "type": "module",
@@ -11,18 +11,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@bull-board/api": "5.17.1",
-    "@bull-board/express": "5.17.1",
-    "@xenova/transformers": "2.17.1",
-    "axios": "1.7.1",
-    "bedrock-wrapper": "^1.0.15",
-    "bullmq": "5.7.10",
+    "@bull-board/api": "5.21.1",
+    "@bull-board/express": "5.21.1",
+    "@xenova/transformers": "2.17.2",
+    "axios": "1.7.2",
+    "bedrock-wrapper": "1.1.0",
+    "bullmq": "5.10.3",
     "chromadb": "1.8.1",
     "dotenv": "^16.4.5",
     "express": "4.19.2",
     "form-data": "^4.0.0",
-    "openai": "^4.47.1",
+    "openai": "4.53.0",
     "path": "^0.12.7",
-    "redis": "^4.6.13"
+    "redis": "4.6.15"
   }
 }
