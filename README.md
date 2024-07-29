@@ -51,9 +51,9 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
 - ### Download and Run an LLM via Llama.cpp
   Skip this if using a cloud API (`.env` variable `LLM_SERVER_API="cloud"`)
 
-  - Download the lastest version of `llama.cpp` from https://github.com/ggerganov/llama.cpp or run the downloader PowerShell Script here:  
+  - Download the latest version of `llama.cpp` from https://github.com/ggerganov/llama.cpp or run the downloader PowerShell Script here:  
     `./tools/download-latest-llama.ps1`
-  - Download a model (GGUF architecture) and save to your computer (note the path as it will be required when runing your LLM Server)  
+  - Download a model (GGUF architecture) and save to your computer (note the path as it will be required when running your LLM Server)  
     ⇢ Reccomended 7B models to try:
       - [Llama-3-8B-Instruct-GGUF](https://huggingface.co/QuantFactory/Meta-Llama-3-8B-Instruct-GGUF/blob/main/Meta-Llama-3-8B-Instruct.Q4_K_M.gguf)
       - [NeuralBeagle14-7B-GGUF](https://huggingface.co/TheBloke/NeuralBeagle14-7B-GGUF/blob/main/neuralbeagle14-7b.Q4_K_M.gguf)
@@ -89,10 +89,10 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
 
 - Ensure the Redis and Chroma Docker Containers are started
 - Ensure the Llama.cpp server is running a loaded LLM
-- Verify all enviorment variables are set correctly in the `.env` file:
-  - UI to server (message insight poc [default] / chatbot / audio transcriber)
+- Verify all environment variables are set correctly in the `.env` file:
+  - UI to server (message review concept / chatbot / audio transcriber)
   - redis and choroma URLs/ports
-  - max concurrent requests (this is the parallel requestions option set when you started your LLM server; default is 2)
+  - max concurrent requests (this is the parallel requests option set when you started your LLM server; default is 2)
   - embedding model (default is english only: all-MiniLM-L6-v2)
   - whisper server ULR/port (optional if you want to transcribe audio)
 - Start the Express Web server via
