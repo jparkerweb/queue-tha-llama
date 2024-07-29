@@ -1,0 +1,116 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;400;500&display=swap" rel="stylesheet">
+    <title>Message Review Demo</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=1">
+    <link rel="stylesheet" href="message-review.css">
+    <script defer src="message-review.js"></script>
+    <script defer src="message-review-chat.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="header--left">
+            <a href="/">
+                <span class="header__menu material-symbols-outlined">menu</span>
+                <img class="header__logo" src="./img/background.png" height="30px">
+                <span class="header__search-icon material-symbols-outlined">search</span>
+                <div class="header__search-title">My Search Results</div>
+            </a>
+        </div>
+        <div class="header--right">
+            <button class="header__button">
+                <span style="position: relative; top: -2px; padding-right: 5px;">↓</span> Date
+            </button>
+            <button class="header__button">
+                <a href="/demo.html" target="demo" style="color:white !important;"><span class="material-symbols-outlined">keyboard</span></a>
+            </button>
+            <button class="header__button">
+                <a href="/demo2.html" target="demo" style="color:white !important; text-decoration:none !important;">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="material-symbols-outlined">arrow_drop_down</span>
+                </a>
+            </button>
+            <a id="chatsession" target="chatsession" style="color:white !important;"><span class="header__user-icon material-symbols-outlined">person</span></a>
+        </div>
+    </div>
+    <div class="content-wrapper">
+        <div class="results-list">
+            <div class="result-list__header flex--space-between">
+                <div class="flex-row-center">
+                    <span id="messagecount" class="header__message-count margin-right-10 font-style--italic font-9em color-dark-grey"></span>
+                </div>
+                <div class="flex-row-center">
+                    <a href="/" class="plain-link">
+                        <span class="material-symbols-outlined">chevron_left</span>
+                        <span class="material-symbols-outlined">chevron_right</span>
+                    </a>
+                </div>
+            </div>
+            <a href="/" style="order:1;" class="plain-link">
+                <button type="button" class="results-list__next-page">
+                    Next Page
+                </button>
+            </a>
+        </div>
+        <div id="messageConent" class="message-content">
+            <div style="font-size: 2.5em; flex:1; align-self: center;" class="flex-row-center flex--align-center color-hot-stone">
+                <span class="material-symbols-outlined margin-right-10" style="font-size:1em;">email</span>
+                <div>Select a Message</div>
+            </div>
+        </div>
+        <div class="review-pane -hidden">
+            <div id="chat-container">
+                <div id="messages"></div>
+                <div id="chatForm">
+                    <div>
+                        <textarea id="input-box" placeholder="Type a new prompt here, or make a selection using the prompt wizard below."></textarea>
+                    </div>
+                    <div class="buttons">
+                        <button class="button-gradient button-gradient--orange" id="wizardButton">🧙‍♂️</button>
+                        <button class="button-gradient button-gradient--green" id="promptButton">✨ SEND</button>
+                        <button class="button-gradient button-gradient--blue -hidden" id="graphButton">💠</button>
+                        <button class="button-gradient button-gradient--purple button-transcribe-audio -hidden" id="transcribeAudioButton">🔊 TRANSCRIBE</button>
+                    </div>
+                </div>
+            </div>
+            <div id="heartbeat-indicator" style="display:none;">❤️</div>
+            <div id="collection" class="margin-top-10 font-7em"></div>
+            <div id="requestid" class="margin-top-5 font-7em"></div>
+        </div>
+    </div>
+
+    <!-- wizard modal -->
+    <div id="wizardModal" class="modal--wizard">
+        <div class="modal-content">
+            <div class="modal-title-row">
+                <div class="modal-title">Prompt Suggestions ✨</div>
+                <span id="wizardCloseButton" class="close-button">&times;</span>
+            </div>
+            <ul class="modal-options">
+                <!-- Dynamic list items will be added here -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- knowledge graph modal -->
+    <div id="graphModal" class="modal--graph">
+        <div class="modal-content">
+            <div class="modal-title-row">
+                <div class="modal-title">Knowledge Graph 💠</div>
+                <span id="graphCloseButton" class="close-button">&times;</span>
+            </div>
+            <button id="resetZoom">Reset View</button>
+            <div class="zoom-instructions">Use your mouse wheel to zoom in/out. Click and drag to move the canvas or nodes around.</div>
+            <div id="graph"></div>
+        </div>
+    </div>
+
+    // load the d3 library
+    <script src="./vendor/d3.v7.min.js"></script>
+</body>
+</html>
