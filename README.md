@@ -49,7 +49,7 @@ This is a web-based chat application that integrates Large Language Model (LLM) 
     - download all files from https://huggingface.co/Xenova/paraphrase-multilingual-MiniLM-L12-v2/tree/main and save them to the `models/Xenova/paraphrase-multilingual-MiniLM-L12-v2` folder
 
 - ### Download and Run an LLM via Llama.cpp
-  Only requried if running `Llama.cpp`, skip this if using a cloud API or ollama (`.env` variable `LLM_SERVER_API="other"`)
+  Skip this if using a cloud API (`.env` variable `LLM_SERVER_API="cloud"`)
 
   - Download the lastest version of `llama.cpp` from https://github.com/ggerganov/llama.cpp or run the downloader PowerShell Script here:  
     `./tools/download-latest-llama.ps1`
