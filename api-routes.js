@@ -31,10 +31,11 @@ const INACTIVE_THRESHOLD = parseInt(process.env.INACTIVE_THRESHOLD) || 1000 * 10
 const ACTIVE_CLIENTS = new Map();                                                    // store active clients by requestId
 const ACTIVE_COLLECTIONS = new Map();                                                // store active collections by collectionName
 const responseStreams = new Map();                                                   // Store response streams by requestId
+const LLM_GRAPH_ENABLED = toBoolean(process.env.LLM_GRAPH_ENABLED) || false;         // Whether to enable graph generation
 const WHISPER_ENABLED = toBoolean(process.env.WHISPER_ENABLED) || false;             // Whether to enable audio transcriptions via Whisper.cpp server (requires the server to be running)
 const WHISPER_SERVER_URL = process.env.WHISPER_SERVER_URL || 'http://127.0.0.1:8087'; // URL of the Whisper.cpp server
 const VERBOSE_LOGGING = toBoolean(process.env.VERBOSE_LOGGING) || false;
-
+const LLM_MAGIC_PROMPT_SUGGESTIONS = process.env.LLM_MAGIC_PROMPT_SUGGESTIONS;
 
 export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots) {
     setupQueueHandler(app, responseStreams, INACTIVE_THRESHOLD, ACTIVE_CLIENTS, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots);
@@ -54,6 +55,13 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
     // This endpoint is used by the client to determine if verbose logging is enabled
     app.get('/verbose-logging', (req, res) => {
         res.json({ verboseLogging: VERBOSE_LOGGING });
+    });
+    // -----------------------------------------------
+    // -- endpoint to check if llm graph is enabled --
+    // -----------------------------------------------
+    // This endpoint is used by the client to determine if llm graph is enabled
+    app.get('/graph-enabled', (req, res) => {
+        res.json({ llmGraphEnabled: LLM_GRAPH_ENABLED });
     });
 
     // ---------------------------------------------
@@ -187,6 +195,45 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
     });
 
 
+    // -------------------------------------------------
+    // -- Endpoint to handle magic prompt suggestions --
+    // -------------------------------------------------
+    app.post('/magic-prompt-suggestions', async (req, res) => {
+        let { requestId, COLLECTION_NAME, MESSAGE_CONTEXT = '' } = req.body;
+        let prompt = LLM_MAGIC_PROMPT_SUGGESTIONS;
+        // Ensure prompt and requestId are strings
+        prompt = String(prompt);
+        requestId = String(requestId);
+        const collectionName = String(COLLECTION_NAME);
+        try {
+            // generate a prompt GUID
+            const promptGUID = generateGUID();
+            // setup prompt instructions and add any passed context
+            const promptInstructions = process.env.LLM_PROMPT_INSTRUCTIONS + MESSAGE_CONTEXT;
+            // embed the prompt
+            const textChunksAndEmbeddings = await embedText(prompt, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.log);
+            // build prompt
+            let originalPrompt = prompt;
+            let fullPrompt = [];
+            fullPrompt.push({ role: 'system', content: `${promptInstructions}` });
+            fullPrompt.push({ role: 'user', content: `${originalPrompt}` });
+            // add job to queue
+            const job = await llamaQueue.add('magic-prompt-suggestion', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
+            if (VERBOSE_LOGGING) { 
+                console.log('Added magic prompt suggestion job with ID:', job.id); // Log the job ID
+                let lastPrompt = fullPrompt[(fullPrompt.length - 1)].content;
+                console.log('shortPrompt:', lastPrompt.slice(-70)); // Log the Prompt
+            }
+            // Initialize the entry for this client in ACTIVE_CLIENTS
+            ACTIVE_CLIENTS.set(requestId, null);
+            // Store the response stream to be used when the job is processed
+            responseStreams.set(requestId, res);
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+        } catch (error) {
+            console.log('Error adding magic prompt suggestion job to queue:', error);
+            res.status(500).send('I\'m sorry but there was an issue processing your magic prompt suggestion, please try again');
+        }
+    });
     // --------------------------------------
     // -- Endpoint to handle chat messages --
     // --------------------------------------
@@ -285,6 +332,44 @@ export function setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total
     });
 
 
+    // ---------------------------------------
+    // -- Endpoint to handle graph requests --
+    // ---------------------------------------
+    app.post('/graph', async (req, res) => {
+        let { prompt, requestId, COLLECTION_NAME, MESSAGE_CONTEXT = '' } = req.body;
+        // Ensure prompt and requestId are strings
+        prompt = String(prompt);
+        requestId = String(requestId);
+        const collectionName = String(COLLECTION_NAME);
+        try {
+            // generate a prompt GUID
+            const promptGUID = generateGUID();
+            // setup prompt instructions
+            const fullPrompt = [
+                {
+                    role: 'system',
+                    content: `${process.env.LLM_GRAPH_INSTRUCTIONS} ${MESSAGE_CONTEXT}`
+                },
+                {
+                    role: 'assistant',
+                    content: `${process.env.LLM_GRAPH_PROMPT_SUFFIX}`
+                }
+            ];
+            // add job to queue
+            const job = await llamaQueue.add('graph', { fullPrompt, requestId }, { jobId: requestId, collectionName: collectionName, promptGUID: promptGUID });
+            if (VERBOSE_LOGGING) { 
+                console.log('Added graph job with ID:', job.id); // Log the job ID
+            }
+            // Initialize the entry for this client in ACTIVE_CLIENTS
+            ACTIVE_CLIENTS.set(requestId, null);
+            // Store the response stream to be used when the job is processed
+            responseStreams.set(requestId, res);
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+        } catch (error) {
+            console.log('Error adding graphh job to queue:', error);
+            res.status(500).send('Error adding graph job to queue');
+        }
+    });
     // -----------------------------------
     // -- Endpoint to handle heartbeats --
     // -----------------------------------

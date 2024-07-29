@@ -232,6 +232,7 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
         }
 
         // Embed the full response
+        if (jobName === 'chat' && fullResponse !== '') {
         const textChunksAndEmbeddings = await embedText(fullResponse, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP).catch(console.log);
 
         for (const textChunksAndEmbedding of textChunksAndEmbeddings) {
@@ -245,6 +246,7 @@ export async function streamLlamaData(prompt, res, job, ACTIVE_CLIENTS, CHUNK_TO
             ).catch(error => {
                 console.log('Error adding to collection:', error);
             });
+            }
         }
 
         ACTIVE_CLIENTS.delete(job.id); // Remove the client from the active list

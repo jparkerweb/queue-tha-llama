@@ -113,7 +113,7 @@ setupApiRoutes(app, CHUNK_TOKEN_SIZE, CHUNK_TOKEN_OVERLAP, total_slots);
 // --------------------------------------------------------------------
 async function fetchNCtxValue() {
     try {
-        if (LLM_SERVER_API === 'llama.cpp') {
+        if (LLM_SERVER_API === 'llama') {
             const response = await fetch(`${LLM_BASE_URL}/props`);
             if (!response.ok) {
                 console.error(`X → LLM Server Offline\nError fetching /props: ${response.statusText}`);
@@ -140,7 +140,7 @@ async function fetchLLMTotalSlots() {
     try {
         let total_slots = MAX_CONCURRENT_REQUESTS_FALLBACK || 1;
 
-        if (LLM_SERVER_API === 'llama.cpp') {
+        if (LLM_SERVER_API === 'llama') {
 
             const response = await fetch(`${LLM_BASE_URL}/props`);
             if (!response.ok) {
